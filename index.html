@@ -478,6 +478,7 @@
     .final-stat b { display: block; font-size: 17px; }
     .final-stat span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
     .channel-page, .phone-home, .journal, .fake-site, .final { animation: screen-enter .28s ease both; }
+    .screen-view.skip-screen-animation * { animation: none !important; }
 
     /* Readability correction: calibrated against full-size banking interfaces. */
     .statusbar { font-size: 14px; }
@@ -768,7 +769,9 @@
     // =============================
 
     let timers = [];
+    let pushTimerId = null;
     let gameState = createInitialState();
+    let renderedScreen = null;
 
     function createInitialState() {
       return {
@@ -822,6 +825,7 @@
     function clearTimers() {
       timers.forEach(clearTimeout);
       timers = [];
+      pushTimerId = null;
     }
 
     function record(label, impact, explanation, risky = false) {
@@ -943,6 +947,7 @@
     }
 
     function render() {
+      const isSameScreen = renderedScreen === gameState.screen;
       let content = '';
       if (gameState.screen === 'start') content = renderStart();
       else if (gameState.screen === 'home') content = renderHome();
@@ -969,6 +974,25 @@
 
       const externalClass = ['external', 'delivery-page', 'market-page', 'mail-page'].includes(gameState.screen) ? ' external-mode' : '';
       app.innerHTML = `${statusBar()}<div class="screen"><div class="screen-view${externalClass}" id="screen-view">${content}</div>${bottomNav()}${pushes()}${modal()}${gameState.toast ? `<div class="toast" role="status">${gameState.toast}</div>` : ''}</div>`;
+      if (isSameScreen) document.getElementById('screen-view')?.classList.add('skip-screen-animation');
+      renderedScreen = gameState.screen;
+    }
+
+    function renderPushes() {
+      const screen = app.querySelector('.screen');
+      if (!screen) {
+        render();
+        return;
+      }
+
+      const currentLayer = screen.querySelector('.push-layer');
+      const nextLayer = pushes();
+      if (currentLayer) {
+        if (nextLayer) currentLayer.outerHTML = nextLayer;
+        else currentLayer.remove();
+      } else if (nextLayer) {
+        screen.insertAdjacentHTML('beforeend', nextLayer);
+      }
     }
 
     // =============================
@@ -1291,6 +1315,7 @@
     function startGame() {
       clearTimers();
       gameState = createInitialState();
+      renderedScreen = null;
       gameState.started = true;
       gameState.screen = 'home';
       stage.classList.add('game-active');
@@ -1313,14 +1338,26 @@
     }
 
     function addPush(push) {
+      if (pushTimerId !== null) {
+        clearTimeout(pushTimerId);
+        timers = timers.filter(timerId => timerId !== pushTimerId);
+      }
       gameState.pushes = [push];
-      later(() => {
+      pushTimerId = later(() => {
+        pushTimerId = null;
+        const isCurrentPush = gameState.pushes.some(item => item.id === push.id);
+        if (!isCurrentPush) return;
         gameState.pushes = gameState.pushes.filter(item => item.id !== push.id);
-        render();
+        renderPushes();
       }, 6500);
     }
 
     function dismissPush(id) {
+      if (gameState.pushes.some(item => item.id === id) && pushTimerId !== null) {
+        clearTimeout(pushTimerId);
+        timers = timers.filter(timerId => timerId !== pushTimerId);
+        pushTimerId = null;
+      }
       gameState.pushes = gameState.pushes.filter(item => item.id !== id);
     }
 
