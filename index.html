@@ -1,0 +1,1975 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101933">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23315eea'/%3E%3Cpath d='M17 47V17h8l14 18V17h8v30h-8L25 29v18z' fill='white'/%3E%3C/svg%3E">
+  <title>Испорченный интерфейс — NOVA Bank</title>
+  <style>
+    :root {
+      --ink: #121a2f;
+      --muted: #697086;
+      --paper: #f7f5ef;
+      --panel: #ffffff;
+      --line: #e6e3da;
+      --navy: #101933;
+      --navy-2: #1a2850;
+      --blue: #315eea;
+      --blue-dark: #2246bd;
+      --mint: #a8f0d0;
+      --green: #147a58;
+      --amber: #f3aa3d;
+      --red: #d94747;
+      --shadow: 0 30px 80px rgba(7, 12, 29, .28);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 16% 15%, rgba(83, 115, 225, .26), transparent 29rem),
+        radial-gradient(circle at 84% 85%, rgba(100, 225, 180, .15), transparent 26rem),
+        #0b1227;
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible { outline: 3px solid rgba(49, 94, 234, .28); outline-offset: 2px; }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, black, transparent 88%);
+    }
+
+    .stage {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(280px, 780px);
+      place-content: center;
+      padding: 38px 28px;
+    }
+
+    .brief { width: 100%; max-width: 780px; color: #f6f7fb; align-self: center; animation: landing-in .55s ease both; }
+    .eyebrow { margin: 0 0 18px; color: #9eb0f7; font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .brief h1 { margin: 0; max-width: 9ch; font-size: clamp(54px, 7vw, 96px); line-height: .94; letter-spacing: -.065em; }
+    .brief h1 span { color: var(--mint); }
+    .brief-copy { max-width: 53ch; margin: 26px 0 24px; color: #c8cfe0; font-size: 19px; line-height: 1.58; }
+    .brief-meta { display: flex; gap: 12px; flex-wrap: wrap; }
+    .brief-meta span { padding: 9px 13px; border: 1px solid rgba(255,255,255,.13); border-radius: 999px; color: #d9deeb; font-size: 13px; background: rgba(255,255,255,.045); }
+    .landing-note { max-width: 610px; margin: 30px 0 0; padding: 17px 19px; display: flex; gap: 13px; border: 1px solid rgba(168,240,208,.18); border-radius: 18px; color: #bac4da; background: rgba(255,255,255,.05); font-size: 14px; line-height: 1.5; }
+    .landing-note b { color: var(--mint); }
+    .landing-actions { display: flex; align-items: center; gap: 18px; margin-top: 30px; }
+    .landing-start { min-width: 210px; min-height: 58px; padding: 14px 24px; border: 0; border-radius: 17px; color: var(--navy); background: var(--mint); cursor: pointer; font-size: 16px; font-weight: 900; box-shadow: 0 16px 34px rgba(58,191,145,.2); transition: transform .18s, box-shadow .18s; }
+    .landing-start:hover { transform: translateY(-2px); box-shadow: 0 20px 40px rgba(58,191,145,.27); }
+    .landing-actions small { max-width: 30ch; color: #8f9ab5; font-size: 12px; line-height: 1.45; }
+
+    .phone-wrap { position: relative; display: none; }
+    .stage.game-active { grid-template-columns: minmax(430px, 590px); }
+    .stage.game-active .brief { display: none; }
+    .stage.game-active .phone-wrap { display: block; animation: game-in .42s cubic-bezier(.2,.85,.2,1) both; }
+    .phone-glow { position: absolute; inset: 10% -14% -3%; background: rgba(70, 103, 230, .24); filter: blur(58px); border-radius: 50%; }
+    .phone {
+      position: relative;
+      width: min(100%, 550px);
+      height: min(920px, calc(100vh - 52px));
+      height: min(920px, calc(100dvh - 52px));
+      min-height: 650px;
+      margin: auto;
+      overflow: hidden;
+      background: var(--paper);
+      border: 9px solid #202943;
+      border-radius: 46px;
+      box-shadow: var(--shadow), inset 0 0 0 1px rgba(255,255,255,.18);
+      isolation: isolate;
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      z-index: 30;
+      top: 8px;
+      left: 50%;
+      width: 98px;
+      height: 25px;
+      transform: translateX(-50%);
+      border-radius: 99px;
+      background: #202943;
+      pointer-events: none;
+    }
+
+    .app { height: 100%; position: relative; display: flex; flex-direction: column; }
+    .statusbar { height: 34px; padding: 10px 19px 0; display: flex; align-items: center; justify-content: space-between; flex: none; font-size: 11px; font-weight: 800; color: #343b50; }
+    .status-icons { display: flex; gap: 5px; align-items: center; }
+    .signal { display: inline-flex; gap: 1px; align-items: end; height: 9px; }
+    .signal i { display: block; width: 2px; border-radius: 2px; background: currentColor; }
+    .signal i:nth-child(1) { height: 3px; } .signal i:nth-child(2) { height: 5px; } .signal i:nth-child(3) { height: 7px; } .signal i:nth-child(4) { height: 9px; }
+    .battery { width: 17px; height: 8px; border: 1px solid currentColor; border-radius: 2px; position: relative; }
+    .battery::before { content: ""; position: absolute; inset: 1px 3px 1px 1px; background: currentColor; }
+    .battery::after { content: ""; position: absolute; top: 2px; right: -3px; width: 2px; height: 4px; background: currentColor; border-radius: 0 2px 2px 0; }
+
+    .screen { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+    .screen-view { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #ccd0da transparent; padding-bottom: 22px; }
+    .screen-view.external-mode { padding-bottom: 0; }
+    .screen-view::-webkit-scrollbar { width: 5px; }
+    .screen-view::-webkit-scrollbar-thumb { background: #ccd0da; border-radius: 8px; }
+
+    .app-header { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px 12px; }
+    .wordmark { display: inline-flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 900; letter-spacing: -.035em; }
+    .wordmark-mark { width: 27px; height: 27px; border-radius: 9px 4px 9px 4px; display: grid; place-items: center; color: white; background: var(--blue); transform: rotate(-5deg); box-shadow: 0 7px 16px rgba(49,94,234,.25); }
+    .wordmark-mark span { transform: rotate(5deg); }
+    .user { width: 35px; height: 35px; border: 0; border-radius: 50%; background: #dce3fb; color: #25366e; font-weight: 900; cursor: pointer; }
+    .header-back { border: 0; background: none; padding: 7px; margin-left: -7px; cursor: pointer; font-size: 21px; line-height: 1; }
+    .header-title { margin-right: auto; font-size: 17px; font-weight: 850; }
+    .scene-chip { margin: 0 18px 8px; display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 11px; font-weight: 750; }
+    .scene-chip span { color: var(--blue); }
+    .scene-chip b { color: #7b8191; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .scene-track { flex: 1; height: 4px; overflow: hidden; border-radius: 8px; background: #e4e5e9; }
+    .scene-track i { display: block; height: 100%; border-radius: inherit; background: var(--blue); transition: width .45s ease; }
+
+    .home { padding: 2px 18px 24px; }
+    .hello { display: flex; justify-content: space-between; align-items: end; margin: 8px 2px 16px; }
+    .hello small { display: block; color: var(--muted); margin-bottom: 3px; }
+    .hello strong { font-size: 22px; letter-spacing: -.035em; }
+    .shield-state { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 11px; font-weight: 800; }
+    .shield-state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px rgba(20,122,88,.1); }
+    .shield-state.warn { color: #b26d15; }
+    .shield-state.danger { color: var(--red); }
+
+    .bank-card {
+      min-height: 190px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 26px;
+      padding: 22px;
+      color: white;
+      background: linear-gradient(135deg, #1a2850 0%, #101933 62%, #293b75 100%);
+      box-shadow: 0 18px 38px rgba(18,30,66,.2);
+    }
+    .bank-card::after { content: ""; position: absolute; width: 230px; height: 230px; right: -105px; top: -98px; border: 1px solid rgba(168,240,208,.28); border-radius: 50%; box-shadow: 0 0 0 32px rgba(168,240,208,.05), 0 0 0 66px rgba(168,240,208,.035); }
+    .card-label { color: #b8c0d4; font-size: 12px; }
+    .balance { margin: 7px 0 38px; font-variant-numeric: tabular-nums; font-size: 33px; font-weight: 850; letter-spacing: -.045em; transition: color .3s, transform .3s; }
+    .balance.bump { color: var(--mint); transform: translateY(-2px) scale(1.025); }
+    .card-bottom { display: flex; justify-content: space-between; align-items: end; }
+    .card-number { font-size: 14px; letter-spacing: .12em; }
+    .card-brand { font-size: 15px; font-weight: 900; letter-spacing: -.02em; }
+
+    .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin: 16px 0 23px; }
+    .quick { min-height: 68px; border: 1px solid var(--line); border-radius: 17px; background: var(--panel); cursor: pointer; font-size: 11px; font-weight: 750; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 6px 14px rgba(15,24,49,.035); }
+    .quick b { color: var(--blue); font-size: 19px; line-height: 1; }
+    .section-head { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 11px; }
+    .section-head h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+    .link-btn { border: 0; padding: 4px; background: none; color: var(--blue); cursor: pointer; font-size: 12px; font-weight: 750; }
+
+    .transaction-list, .message-list { display: grid; gap: 8px; }
+    .transaction { min-height: 64px; display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 17px; background: var(--panel); border: 1px solid var(--line); animation: row-in .35s ease both; }
+    .tx-icon { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 13px; background: #eef1fb; color: var(--blue); font-weight: 900; }
+    .tx-main { flex: 1; min-width: 0; }
+    .tx-main strong, .tx-main span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tx-main strong { font-size: 13px; }
+    .tx-main span { margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .tx-amount { font-size: 13px; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .tx-amount.in { color: var(--green); }
+    .tx-amount.out { color: var(--ink); }
+
+    .page { padding: 3px 18px 24px; }
+    .page-intro { margin: 4px 1px 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .info-banner { padding: 13px 14px; margin: 0 0 14px; border-radius: 16px; background: #edf1ff; color: #26386f; font-size: 12px; line-height: 1.45; }
+    .info-banner.warn { background: #fff1dd; color: #764713; }
+    .message-row { width: 100%; min-height: 72px; display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 18px; text-align: left; background: var(--panel); cursor: pointer; }
+    .message-avatar { width: 42px; height: 42px; display: grid; place-items: center; flex: none; border-radius: 50%; color: #31406c; background: #e7ebf8; font-weight: 900; }
+    .message-avatar.suspicious { color: #7f4d15; background: #fff0da; }
+    .message-copy { min-width: 0; flex: 1; }
+    .message-copy strong { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+    .message-copy strong time { color: var(--muted); font-size: 10px; font-weight: 600; }
+    .message-copy span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .unread-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--blue); }
+
+    .chat { display: flex; flex-direction: column; min-height: 100%; padding: 0 15px 18px; }
+    .chat-head { display: flex; align-items: center; gap: 10px; margin: 2px 3px 14px; }
+    .chat-head .message-avatar { width: 38px; height: 38px; }
+    .chat-head strong { display: block; font-size: 13px; }
+    .chat-head span { color: var(--green); font-size: 10px; }
+    .chat-head span.fake-online { color: #b66c13; }
+    .chat-body { flex: 1; display: flex; flex-direction: column; gap: 9px; justify-content: flex-end; min-height: 260px; padding: 12px 3px; }
+    .bubble { max-width: 86%; padding: 11px 13px; border-radius: 16px 16px 16px 5px; background: white; border: 1px solid var(--line); font-size: 12px; line-height: 1.48; animation: bubble-in .3s ease both; }
+    .bubble.mine { margin-left: auto; border-radius: 16px 16px 5px 16px; color: white; background: var(--blue); border-color: var(--blue); }
+    .bubble.system { max-width: 100%; color: var(--muted); background: transparent; border: 0; text-align: center; font-size: 10px; }
+    .chat-actions { display: grid; gap: 8px; margin-top: 12px; }
+    .code-compose { display: flex; gap: 8px; margin-top: 9px; }
+    .code-compose input { min-width: 0; flex: 1; height: 44px; padding: 0 12px; border: 1px solid #d6d8df; border-radius: 13px; background: white; }
+    .code-compose button { width: 47px; border: 0; border-radius: 13px; color: white; background: var(--blue); cursor: pointer; font-size: 18px; }
+
+    .security-list { display: grid; gap: 9px; }
+    .security-item { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line); background: white; border-radius: 18px; }
+    .security-icon { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 13px; background: #eaf8f2; color: var(--green); font-size: 17px; }
+    .security-item div { flex: 1; }
+    .security-item strong { display: block; font-size: 13px; }
+    .security-item span { display: block; color: var(--muted); margin-top: 3px; font-size: 10px; line-height: 1.35; }
+    .security-item button { border: 0; background: none; color: var(--blue); font-size: 17px; cursor: pointer; }
+
+    .decision { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 19px; background: rgba(255,255,255,.72); }
+    .decision-label { display: flex; align-items: center; gap: 7px; margin-bottom: 11px; font-size: 11px; font-weight: 850; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+    .decision-label b { width: 19px; height: 19px; display: grid; place-items: center; border-radius: 7px; color: white; background: var(--blue); font-size: 10px; }
+    .button-stack { display: grid; gap: 8px; }
+    .btn { min-height: 45px; border: 0; border-radius: 14px; padding: 10px 14px; cursor: pointer; font-size: 12px; font-weight: 800; transition: transform .16s, background .16s, box-shadow .16s; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { color: white; background: var(--blue); box-shadow: 0 8px 20px rgba(49,94,234,.2); }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-secondary { color: #233b83; background: #e9edfb; }
+    .btn-ghost { border: 1px solid var(--line); background: white; }
+    .btn-danger { color: white; background: #cc4141; }
+    .btn-link { min-height: 34px; padding: 5px; background: none; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+
+    .external { min-height: 100%; background: #f4f4f4; }
+    .browser-bar { padding: 9px 12px; background: #e5e5e5; border-bottom: 1px solid #d0d0d0; }
+    .browser-controls { display: flex; gap: 6px; margin-bottom: 7px; }
+    .browser-controls i { width: 8px; height: 8px; border-radius: 50%; background: #c0c0c0; }
+    .address { height: 28px; display: flex; align-items: center; gap: 6px; overflow: hidden; padding: 0 9px; border-radius: 7px; background: white; color: #5f5f5f; font-size: 9px; white-space: nowrap; }
+    .address.bad { color: #8a3e3e; }
+    .return-page { padding: 27px 23px 32px; color: #232323; background: white; min-height: calc(100% - 72px); }
+    .fake-logo { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 28px; color: #195d4a; font-weight: 900; }
+    .fake-logo i { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; background: #2aa879; color: white; font-style: normal; }
+    .return-page h2 { margin: 0 0 9px; font-size: 24px; letter-spacing: -.035em; }
+    .return-page > p { margin: 0 0 23px; color: #666; font-size: 12px; line-height: 1.5; }
+    .form-field { display: block; margin: 0 0 12px; color: #555; font-size: 10px; font-weight: 750; }
+    .form-field input { width: 100%; height: 44px; margin-top: 6px; padding: 0 12px; border: 1px solid #cacaca; border-radius: 8px; background: white; font-size: 13px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fake-submit { width: 100%; min-height: 47px; margin-top: 4px; border: 0; border-radius: 9px; color: white; background: #19966c; cursor: pointer; font-weight: 850; }
+    .external-return { width: 100%; border: 0; margin-top: 14px; padding: 7px; color: #666; background: none; text-decoration: underline; cursor: pointer; font-size: 11px; }
+    .fake-foot { margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee; color: #999; text-align: center; font-size: 9px; }
+
+    .bottom-nav { flex: none; min-height: 67px; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--line); background: rgba(250,249,245,.96); padding: 7px 8px max(7px, env(safe-area-inset-bottom)); backdrop-filter: blur(16px); }
+    .nav-btn { position: relative; border: 0; padding: 3px 2px; background: none; color: #8c91a0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 8.5px; font-weight: 750; }
+    .nav-btn .nav-icon { font-size: 18px; line-height: 1; filter: grayscale(1); }
+    .nav-btn.active { color: var(--blue); }
+    .nav-btn.active .nav-icon { filter: none; }
+    .badge { position: absolute; top: 2px; left: calc(50% + 7px); min-width: 16px; height: 16px; padding: 0 4px; display: grid; place-items: center; border-radius: 9px; color: white; background: var(--red); border: 2px solid var(--paper); font-size: 8px; }
+
+    .push-layer { position: absolute; z-index: 50; inset: 38px 9px auto; display: grid; gap: 8px; pointer-events: none; }
+    .push { pointer-events: auto; display: grid; grid-template-columns: 34px 1fr auto; gap: 9px; align-items: center; padding: 10px 11px; color: #f7f8fc; background: rgba(22,29,49,.94); border: 1px solid rgba(255,255,255,.12); border-radius: 17px; box-shadow: 0 15px 35px rgba(4,8,19,.3); backdrop-filter: blur(15px); animation: push-in .42s cubic-bezier(.2,.9,.2,1) both; cursor: pointer; }
+    .push-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; color: white; background: var(--blue); font-weight: 900; }
+    .push.warning .push-icon { background: var(--amber); }
+    .push.danger .push-icon { background: var(--red); }
+    .push-copy { min-width: 0; }
+    .push-copy strong { display: block; font-size: 11px; }
+    .push-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; color: #c7ccda; font-size: 10px; }
+    .push time { align-self: start; color: #aeb5c7; font-size: 8px; }
+
+    .modal-layer { position: absolute; z-index: 60; inset: 0; display: grid; place-items: end center; padding: 16px; background: rgba(10,15,31,.48); backdrop-filter: blur(4px); animation: fade .2s ease both; }
+    .modal { width: 100%; padding: 19px; border-radius: 23px; background: white; box-shadow: 0 24px 55px rgba(4,8,20,.3); animation: modal-in .34s cubic-bezier(.2,.9,.2,1) both; }
+    .modal-icon { width: 44px; height: 44px; display: grid; place-items: center; margin-bottom: 13px; border-radius: 15px; color: #7d4d14; background: #fff0dc; font-size: 21px; }
+    .modal-icon.danger { color: #982f2f; background: #ffe7e7; }
+    .modal h3 { margin: 0 0 8px; font-size: 20px; letter-spacing: -.03em; }
+    .modal p { margin: 0 0 16px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .countdown { margin: 4px 0 17px; color: var(--red); font-size: 32px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+    .modal.shake { animation: shake .3s ease both; }
+
+    .start-screen { height: 100%; display: flex; flex-direction: column; padding: 38px 25px 25px; color: white; background: linear-gradient(155deg, #111a35, #17264e 68%, #263d73); }
+    .start-top { display: flex; justify-content: space-between; align-items: center; }
+    .start-screen .wordmark-mark { background: var(--mint); color: var(--navy); }
+    .fiction-badge { padding: 6px 9px; border-radius: 999px; color: #bcc8e6; background: rgba(255,255,255,.07); font-size: 9px; }
+    .start-art { position: relative; min-height: 230px; flex: 1; display: grid; place-items: center; }
+    .orb { width: 190px; height: 190px; position: relative; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(168,240,208,.28); box-shadow: 0 0 0 34px rgba(168,240,208,.045), 0 0 0 68px rgba(168,240,208,.025); }
+    .orb::before { content: "N"; width: 90px; height: 90px; display: grid; place-items: center; border-radius: 30px 12px 30px 12px; color: var(--navy); background: var(--mint); font-size: 44px; font-weight: 950; transform: rotate(-7deg); box-shadow: 0 20px 45px rgba(0,0,0,.2); }
+    .orbit-chip { position: absolute; padding: 8px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; color: #e3e9f8; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); font-size: 10px; }
+    .orbit-chip.one { top: 20%; right: 2%; transform: rotate(5deg); }
+    .orbit-chip.two { bottom: 18%; left: -2%; transform: rotate(-4deg); }
+    .start-copy h2 { margin: 0 0 9px; font-size: 30px; letter-spacing: -.045em; }
+    .start-copy p { margin: 0 0 20px; color: #bdc7df; font-size: 13px; line-height: 1.55; }
+    .start-note { display: flex; gap: 9px; margin: 12px 2px 18px; color: #9fabc8; font-size: 10px; line-height: 1.4; }
+    .start-note b { color: var(--mint); }
+
+    .final { min-height: 100%; padding: 28px 21px; background: #f8f7f3; }
+    .final-mark { width: 62px; height: 62px; display: grid; place-items: center; margin: 12px 0 20px; border-radius: 21px; color: white; background: var(--green); font-size: 29px; box-shadow: 0 15px 30px rgba(20,122,88,.22); }
+    .final.close .final-mark { background: var(--amber); box-shadow: 0 15px 30px rgba(243,170,61,.24); }
+    .final.stolen .final-mark { background: var(--red); box-shadow: 0 15px 30px rgba(217,71,71,.24); }
+    .final.locked .final-mark, .final.cascade .final-mark { background: var(--red); box-shadow: 0 15px 30px rgba(217,71,71,.24); }
+    .final.guardian .final-mark { color: #523706; background: #f0b84b; box-shadow: 0 15px 30px rgba(240,184,75,.25); }
+    .final-kicker { color: var(--muted); font-size: 10px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+    .final h2 { max-width: 9ch; margin: 7px 0 10px; font-size: 36px; line-height: 1; letter-spacing: -.055em; }
+    .final-lead { margin: 0 0 19px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .final-balance { padding: 15px; margin-bottom: 12px; border-radius: 18px; color: white; background: var(--navy); }
+    .final-balance span { display: block; color: #abb5cf; font-size: 10px; }
+    .final-balance strong { display: block; margin-top: 4px; font-size: 25px; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+    .risk-reveal { padding: 14px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 18px; background: white; }
+    .risk-top { display: flex; justify-content: space-between; font-size: 11px; font-weight: 850; }
+    .risk-bar { height: 8px; margin: 10px 0 7px; overflow: hidden; border-radius: 10px; background: #ecebe6; }
+    .risk-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); animation: risk-grow .8s .2s ease both; transform-origin: left; }
+    .risk-reveal small { color: var(--muted); font-size: 9px; line-height: 1.3; }
+    .debrief { margin: 14px 0 18px; }
+    .debrief h3 { margin: 0 0 9px; font-size: 13px; }
+    .debrief-item { display: flex; gap: 9px; padding: 9px 0; border-top: 1px solid var(--line); }
+    .debrief-item b { width: 19px; height: 19px; flex: none; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--green); font-size: 9px; }
+    .debrief-item.risky b { background: var(--red); }
+    .debrief-item span { color: var(--muted); font-size: 10px; line-height: 1.4; }
+    .debrief-item span strong { color: var(--ink); }
+
+    .toast { position: absolute; z-index: 70; left: 50%; bottom: 82px; max-width: calc(100% - 32px); transform: translateX(-50%); padding: 10px 13px; border-radius: 12px; color: white; background: rgba(18,26,47,.94); box-shadow: 0 12px 30px rgba(0,0,0,.2); font-size: 10px; white-space: nowrap; animation: toast-in .25s ease both; }
+    .danger-pulse .phone { animation: phone-pulse .5s ease both; }
+
+    /* Legibility pass: body copy inside the phone stays readable at arm's length. */
+    .statusbar { font-size: 12px; }
+    .wordmark { font-size: 20px; }
+    .header-title { font-size: 19px; }
+    .scene-chip { font-size: 12px; }
+    .hello small { font-size: 13px; }
+    .hello strong { font-size: 25px; }
+    .shield-state { font-size: 12px; }
+    .card-label { font-size: 13px; }
+    .balance { font-size: 36px; }
+    .card-number { font-size: 15px; }
+    .card-brand { font-size: 16px; }
+    .quick { min-height: 76px; font-size: 13px; }
+    .quick b { font-size: 22px; }
+    .section-head h2 { font-size: 18px; }
+    .link-btn { font-size: 14px; }
+    .transaction { min-height: 72px; }
+    .tx-main strong { font-size: 15px; }
+    .tx-main span { font-size: 13px; }
+    .tx-amount { font-size: 15px; }
+    .page-intro { font-size: 14px; line-height: 1.58; }
+    .info-banner { font-size: 14px; line-height: 1.52; }
+    .message-row { min-height: 80px; }
+    .message-copy strong { font-size: 15px; }
+    .message-copy strong time { font-size: 11px; }
+    .message-copy span { font-size: 13px; }
+    .chat-head strong { font-size: 15px; }
+    .chat-head span { font-size: 12px; }
+    .bubble { padding: 13px 15px; font-size: 14px; line-height: 1.55; }
+    .bubble.system { font-size: 12px; }
+    .code-compose input { height: 48px; font-size: 15px; }
+    .security-item { padding: 15px; }
+    .security-item strong { font-size: 15px; }
+    .security-item span { font-size: 12px; line-height: 1.45; }
+    .decision-label { font-size: 12px; }
+    .btn { min-height: 49px; padding: 12px 15px; font-size: 14px; line-height: 1.35; }
+    .address { height: 31px; font-size: 11px; }
+    .return-page > p { font-size: 14px; }
+    .form-field { font-size: 12px; }
+    .form-field input { height: 48px; font-size: 15px; }
+    .fake-submit { min-height: 49px; font-size: 14px; }
+    .external-return { font-size: 13px; }
+    .fake-foot { font-size: 11px; }
+    .bottom-nav { min-height: 72px; }
+    .nav-btn { font-size: 10px; }
+    .nav-btn .nav-icon { font-size: 21px; }
+    .badge { font-size: 9px; }
+    .push-copy strong { font-size: 13px; }
+    .push-copy span { font-size: 12px; }
+    .push time { font-size: 10px; }
+    .modal h3 { font-size: 22px; }
+    .modal p { font-size: 14px; line-height: 1.58; }
+    .final-kicker { font-size: 11px; }
+    .final-lead { font-size: 14px; line-height: 1.58; }
+    .final-balance span { font-size: 12px; }
+    .risk-top { font-size: 13px; }
+    .risk-reveal small { font-size: 11px; line-height: 1.45; }
+    .debrief h3 { font-size: 15px; }
+    .debrief-item span { font-size: 12px; line-height: 1.5; }
+    .toast { font-size: 12px; }
+
+    /* Extended version: phone OS, parallel channels and progression surfaces. */
+    .phone-home {
+      min-height: 100%;
+      padding: 18px 18px 24px;
+      color: white;
+      background:
+        radial-gradient(circle at 80% 12%, rgba(168,240,208,.28), transparent 14rem),
+        linear-gradient(160deg, #17234a, #0d1530 68%, #1b2e59);
+    }
+    .os-head { display: flex; justify-content: space-between; align-items: end; margin: 8px 3px 26px; }
+    .os-head small { display: block; color: #aeb9d3; font-size: 12px; }
+    .os-head strong { display: block; margin-top: 3px; font-size: 27px; letter-spacing: -.04em; }
+    .os-score { padding: 8px 11px; border: 1px solid rgba(255,255,255,.14); border-radius: 13px; background: rgba(255,255,255,.08); color: var(--mint); font-size: 12px; font-weight: 850; }
+    .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 19px 12px; }
+    .app-icon-btn { position: relative; border: 0; padding: 0; color: white; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 11px; }
+    .app-icon-tile { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 18px; color: white; background: linear-gradient(145deg, #416cef, #2850c9); box-shadow: 0 10px 22px rgba(0,0,0,.22); font-size: 24px; font-weight: 900; }
+    .app-icon-tile.sms { background: linear-gradient(145deg, #48c987, #229a63); }
+    .app-icon-tile.mail { background: linear-gradient(145deg, #6794ff, #3868e8); }
+    .app-icon-tile.chatapp { background: linear-gradient(145deg, #8c70ef, #6548c9); }
+    .app-icon-tile.browserapp { background: linear-gradient(145deg, #5cb9e9, #267cba); }
+    .app-icon-tile.journalapp { background: linear-gradient(145deg, #f1b34f, #d18426); }
+    .app-badge { position: absolute; top: -5px; right: calc(50% - 33px); min-width: 19px; height: 19px; padding: 0 5px; display: grid; place-items: center; border-radius: 11px; color: white; background: var(--red); border: 2px solid #17234a; font-size: 9px; font-weight: 900; }
+    .wave-card { margin: 28px 0 0; padding: 17px; border: 1px solid rgba(255,255,255,.13); border-radius: 20px; background: rgba(255,255,255,.07); backdrop-filter: blur(14px); }
+    .wave-card span { color: var(--mint); font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .wave-card h2 { margin: 7px 0 7px; font-size: 19px; }
+    .wave-card p { margin: 0; color: #b8c2d9; font-size: 13px; line-height: 1.5; }
+    .os-dock { margin-top: 24px; padding: 9px; display: flex; justify-content: center; gap: 15px; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; background: rgba(255,255,255,.07); }
+    .os-dock button { width: 46px; height: 46px; border: 0; border-radius: 15px; color: white; background: rgba(255,255,255,.11); cursor: pointer; font-size: 18px; }
+
+    .channel-page { padding: 2px 16px 24px; }
+    .channel-source { display: flex; align-items: center; gap: 11px; padding: 12px 13px; margin-bottom: 13px; border: 1px solid var(--line); border-radius: 17px; background: white; }
+    .channel-logo { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 14px; color: white; background: var(--blue); font-weight: 900; }
+    .channel-logo.sms { background: #2aa66b; }
+    .channel-logo.mail { background: #4775ed; }
+    .channel-logo.market { background: #7859d4; }
+    .channel-source div { min-width: 0; flex: 1; }
+    .channel-source strong { display: block; font-size: 15px; }
+    .channel-source span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .channel-source time { color: var(--muted); font-size: 11px; }
+    .channel-message { padding: 15px; border: 1px solid var(--line); border-radius: 19px; background: white; font-size: 14px; line-height: 1.58; }
+    .channel-message h3 { margin: 0 0 9px; font-size: 18px; line-height: 1.25; }
+    .channel-message p { margin: 0 0 11px; }
+    .channel-message p:last-child { margin-bottom: 0; }
+    .suspicious-link { display: block; margin-top: 12px; padding: 11px; overflow: hidden; border-radius: 11px; color: #2858c2; background: #edf2ff; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .sender-details { margin-top: 11px; padding: 11px; border-radius: 12px; color: #714513; background: #fff0dc; font-size: 12px; line-height: 1.45; }
+    .app-backbar { display: flex; align-items: center; gap: 10px; padding: 8px 18px 11px; }
+    .app-backbar button { border: 0; padding: 5px 8px; margin-left: -8px; background: none; color: var(--blue); cursor: pointer; font-size: 14px; font-weight: 800; }
+    .app-backbar strong { font-size: 17px; }
+
+    .fake-site { min-height: 100%; padding: 22px 20px 30px; background: white; }
+    .fake-site-brand { display: flex; align-items: center; gap: 9px; margin-bottom: 25px; font-weight: 950; }
+    .fake-site-brand i { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 11px; color: white; background: #6b51cf; font-style: normal; }
+    .fake-site h2 { margin: 0 0 10px; font-size: 25px; letter-spacing: -.04em; }
+    .fake-site > p { margin: 0 0 18px; color: #62697b; font-size: 14px; line-height: 1.55; }
+    .fake-price { margin: 14px 0; padding: 15px; border-radius: 14px; color: #174733; background: #e8f8f0; font-size: 14px; }
+    .fake-price strong { display: block; margin-top: 3px; font-size: 23px; }
+    .site-warning { margin: 14px 0; padding: 12px; border-radius: 13px; color: #754612; background: #fff2df; font-size: 12px; line-height: 1.45; }
+
+    .journal { padding: 2px 17px 28px; }
+    .score-hero { padding: 18px; margin-bottom: 14px; border-radius: 21px; color: white; background: linear-gradient(145deg, #17264f, #263e79); }
+    .score-hero small { color: #b7c1dc; font-size: 12px; }
+    .score-number { margin-top: 4px; font-size: 33px; font-weight: 900; letter-spacing: -.04em; }
+    .score-number span { color: var(--mint); font-size: 14px; }
+    .collection-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-bottom: 18px; }
+    .collection-card { min-height: 80px; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: white; }
+    .collection-card b { display: block; color: var(--blue); font-size: 20px; }
+    .collection-card span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+    .red-flags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 18px; }
+    .red-flag { padding: 7px 9px; border-radius: 10px; color: #824444; background: #ffebeb; font-size: 11px; font-weight: 750; }
+    .red-flag.locked { color: #7e8290; background: #eeeef1; }
+    .timeline { display: grid; gap: 0; }
+    .timeline-item { position: relative; padding: 0 0 15px 25px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .timeline-item::before { content: ""; position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .timeline-item.risky::before { background: var(--red); }
+    .timeline-item::after { content: ""; position: absolute; left: 9px; top: 17px; bottom: 1px; width: 2px; background: var(--line); }
+    .timeline-item:last-child::after { display: none; }
+    .timeline-item strong { color: var(--ink); }
+    .achievement-list { display: grid; gap: 8px; margin-bottom: 18px; }
+    .achievement { display: flex; gap: 10px; align-items: center; padding: 11px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+    .achievement i { width: 35px; height: 35px; flex: none; display: grid; place-items: center; border-radius: 12px; color: #75460c; background: #fff0d3; font-style: normal; }
+    .achievement strong { display: block; font-size: 13px; }
+    .achievement span { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+
+    .recovery-grid { display: grid; gap: 9px; margin-top: 15px; }
+    .recovery-option { width: 100%; padding: 14px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 17px; background: white; cursor: pointer; text-align: left; }
+    .recovery-option b { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 13px; color: white; background: var(--blue); }
+    .recovery-option strong { display: block; font-size: 14px; }
+    .recovery-option span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .recovery-option.danger b { background: var(--red); }
+    .recovery-option > span { flex: 1; }
+
+    .final-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 12px; }
+    .final-stat { padding: 10px 7px; border: 1px solid var(--line); border-radius: 14px; text-align: center; background: white; }
+    .final-stat b { display: block; font-size: 17px; }
+    .final-stat span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .channel-page, .phone-home, .journal, .fake-site, .final { animation: screen-enter .28s ease both; }
+
+    /* Readability correction: calibrated against full-size banking interfaces. */
+    .statusbar { font-size: 14px; }
+    .wordmark { font-size: 23px; }
+    .header-title { font-size: 22px; }
+    .header-back { font-size: 26px; }
+    .user { width: 42px; height: 42px; font-size: 15px; }
+    .scene-chip { margin-bottom: 11px; font-size: 14px; }
+    .scene-chip b { font-size: 13px; }
+    .hello small { font-size: 16px; }
+    .hello strong { font-size: 30px; }
+    .shield-state { font-size: 14px; }
+    .bank-card { min-height: 215px; padding: 25px; }
+    .card-label { font-size: 16px; }
+    .balance { font-size: 43px; }
+    .card-number { font-size: 18px; }
+    .card-brand { font-size: 19px; }
+    .quick-actions { gap: 11px; margin-top: 19px; }
+    .quick { min-height: 88px; font-size: 16px; }
+    .quick b { font-size: 27px; }
+    .section-head { margin-bottom: 14px; }
+    .section-head h2 { font-size: 22px; }
+    .link-btn { font-size: 17px; }
+    .transaction-list, .message-list { gap: 11px; }
+    .transaction { min-height: 86px; gap: 14px; padding: 13px 15px; }
+    .tx-icon { width: 46px; height: 46px; border-radius: 15px; font-size: 17px; }
+    .tx-main strong { font-size: 19px; }
+    .tx-main span { margin-top: 5px; font-size: 16px; }
+    .tx-amount { font-size: 18px; }
+    .page-intro { font-size: 17px; line-height: 1.62; }
+    .info-banner { padding: 16px; font-size: 17px; line-height: 1.58; }
+    .message-row { min-height: 96px; gap: 14px; padding: 13px 15px; }
+    .message-avatar { width: 50px; height: 50px; font-size: 17px; }
+    .message-copy strong { font-size: 18px; }
+    .message-copy strong time { font-size: 14px; }
+    .message-copy span { margin-top: 7px; font-size: 16px; }
+    .chat { padding-left: 18px; padding-right: 18px; }
+    .chat-head strong { font-size: 19px; }
+    .chat-head span { font-size: 15px; }
+    .chat-head .message-avatar { width: 46px; height: 46px; }
+    .chat-body { gap: 12px; }
+    .bubble { padding: 15px 17px; font-size: 18px; line-height: 1.58; }
+    .bubble.system { font-size: 15px; }
+    .code-compose input { height: 55px; font-size: 18px; }
+    .code-compose button { width: 55px; font-size: 22px; }
+    .security-list { gap: 12px; }
+    .security-item { padding: 17px; gap: 14px; }
+    .security-icon { width: 46px; height: 46px; font-size: 20px; }
+    .security-item strong { font-size: 19px; }
+    .security-item span { margin-top: 5px; font-size: 16px; line-height: 1.5; }
+    .security-item button { font-size: 23px; }
+    .decision { margin-top: 17px; padding: 17px; }
+    .decision-label { margin-bottom: 14px; font-size: 15px; }
+    .decision-label b { width: 24px; height: 24px; font-size: 12px; }
+    .button-stack, .chat-actions { gap: 11px; }
+    .btn { min-height: 58px; padding: 14px 18px; font-size: 17px; line-height: 1.4; }
+    .address { height: 36px; font-size: 14px; }
+    .return-page { padding: 31px 27px 36px; }
+    .return-page h2 { font-size: 29px; }
+    .return-page > p { font-size: 18px; line-height: 1.6; }
+    .form-field { font-size: 16px; }
+    .form-field input { height: 56px; font-size: 18px; }
+    .fake-submit { min-height: 57px; font-size: 18px; }
+    .external-return { min-height: 48px; font-size: 16px; }
+    .fake-foot { font-size: 14px; }
+    .bottom-nav { min-height: 86px; }
+    .nav-btn { gap: 6px; font-size: 13px; }
+    .nav-btn .nav-icon { font-size: 25px; }
+    .badge { min-width: 20px; height: 20px; font-size: 11px; }
+    .push { grid-template-columns: 42px 1fr auto; padding: 13px 14px; }
+    .push-icon { width: 42px; height: 42px; font-size: 17px; }
+    .push-copy strong { font-size: 16px; }
+    .push-copy span { margin-top: 4px; font-size: 15px; }
+    .push time { font-size: 12px; }
+    .modal { padding: 23px; }
+    .modal h3 { font-size: 27px; }
+    .modal p { font-size: 18px; line-height: 1.62; }
+    .countdown { font-size: 39px; }
+    .toast { bottom: 100px; padding: 13px 16px; font-size: 15px; }
+
+    .os-head small { font-size: 15px; }
+    .os-head strong { font-size: 32px; }
+    .os-score { font-size: 15px; }
+    .app-grid { gap: 23px 15px; }
+    .app-icon-btn { gap: 9px; font-size: 15px; }
+    .app-icon-tile { width: 68px; height: 68px; border-radius: 21px; font-size: 29px; }
+    .app-badge { min-width: 22px; height: 22px; font-size: 11px; }
+    .wave-card { padding: 20px; }
+    .wave-card span { font-size: 14px; }
+    .wave-card h2 { font-size: 23px; }
+    .wave-card p { font-size: 17px; line-height: 1.58; }
+    .os-dock button { width: 52px; height: 52px; font-size: 21px; }
+    .app-backbar button { font-size: 17px; }
+    .app-backbar strong { font-size: 21px; }
+    .channel-source { padding: 15px 16px; gap: 14px; }
+    .channel-logo { width: 50px; height: 50px; font-size: 18px; }
+    .channel-source strong { font-size: 19px; }
+    .channel-source span { font-size: 16px; }
+    .channel-source time { font-size: 14px; }
+    .channel-message { padding: 18px; font-size: 18px; line-height: 1.62; }
+    .channel-message h3 { font-size: 23px; }
+    .suspicious-link { padding: 14px; font-size: 16px; }
+    .sender-details, .site-warning { padding: 14px; font-size: 16px; line-height: 1.55; }
+    .fake-site { padding: 27px 25px 36px; }
+    .fake-site-brand { font-size: 18px; }
+    .fake-site-brand i { width: 39px; height: 39px; }
+    .fake-site h2 { font-size: 31px; }
+    .fake-site > p { font-size: 18px; line-height: 1.62; }
+    .fake-price { padding: 18px; font-size: 17px; }
+    .fake-price strong { font-size: 29px; }
+    .score-hero small { font-size: 15px; }
+    .score-number { font-size: 40px; }
+    .score-number span { font-size: 17px; }
+    .collection-card { min-height: 96px; padding: 15px; }
+    .collection-card b { font-size: 26px; }
+    .collection-card span { font-size: 15px; line-height: 1.45; }
+    .red-flag { padding: 9px 11px; font-size: 14px; }
+    .timeline-item { padding-left: 28px; font-size: 16px; line-height: 1.55; }
+    .achievement { padding: 14px; }
+    .achievement i { width: 43px; height: 43px; font-size: 18px; }
+    .achievement strong { font-size: 17px; }
+    .achievement span { font-size: 14px; }
+    .recovery-option { padding: 17px; }
+    .recovery-option b { width: 47px; height: 47px; font-size: 17px; }
+    .recovery-option strong { font-size: 18px; }
+    .recovery-option span { font-size: 15px; line-height: 1.5; }
+    .final { padding: 32px 25px; }
+    .final-kicker { font-size: 14px; }
+    .final h2 { font-size: 43px; }
+    .final-lead { font-size: 18px; line-height: 1.62; }
+    .final-balance span { font-size: 15px; }
+    .final-balance strong { font-size: 32px; }
+    .final-stat b { font-size: 22px; }
+    .final-stat span { font-size: 12px; }
+    .risk-top { font-size: 16px; }
+    .risk-reveal small { font-size: 14px; }
+    .debrief h3 { font-size: 19px; }
+    .debrief-item span { font-size: 16px; line-height: 1.55; }
+
+    @keyframes push-in { from { opacity: 0; transform: translateY(-18px) scale(.97); } }
+    @keyframes modal-in { from { opacity: 0; transform: translateY(24px) scale(.98); } }
+    @keyframes bubble-in { from { opacity: 0; transform: translateY(8px); } }
+    @keyframes row-in { from { opacity: 0; transform: translateX(8px); } }
+    @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 10px); } }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes risk-grow { from { transform: scaleX(0); } }
+    @keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+    @keyframes phone-pulse { 50% { filter: drop-shadow(0 0 18px rgba(217,71,71,.42)); } }
+    @keyframes landing-in { from { opacity: 0; transform: translateY(14px); } }
+    @keyframes game-in { from { opacity: 0; transform: translateY(18px) scale(.98); } }
+    @keyframes screen-enter { from { opacity: 0; transform: translateX(8px); } }
+
+    @media (max-width: 850px) {
+      .ambient, .phone-glow { display: none; }
+      .stage { padding: 32px 22px; min-height: 100vh; min-height: 100dvh; }
+      .stage.game-active { display: block; padding: 0; background: var(--paper); }
+      .stage.game-active .brief { display: none; }
+      .brief h1 { font-size: clamp(48px, 15vw, 72px); }
+      .brief-copy { font-size: 17px; }
+      .landing-actions { align-items: stretch; flex-direction: column; gap: 12px; }
+      .landing-start { width: 100%; }
+      .landing-actions small { max-width: none; }
+      .phone { width: 100%; height: 100vh; height: 100dvh; min-height: 540px; border: 0; border-radius: 0; box-shadow: none; }
+      .phone::before { display: none; }
+      .statusbar { padding-top: max(10px, env(safe-area-inset-top)); height: calc(34px + env(safe-area-inset-top)); }
+      .push-layer { top: calc(38px + env(safe-area-inset-top)); }
+    }
+
+    @media (max-height: 720px) and (min-width: 851px) {
+      .stage { padding: 20px; }
+      .phone { height: calc(100vh - 40px); min-height: 600px; transform: scale(.92); }
+      .brief h1 { font-size: 54px; }
+    }
+
+    @media (max-width: 370px) {
+      .home, .page { padding-left: 14px; padding-right: 14px; }
+      .bank-card { min-height: 175px; }
+      .balance { font-size: 32px; }
+      .nav-btn { font-size: 12px; }
+      .btn { font-size: 16px; }
+    }
+
+    @media (max-width: 460px) {
+      .nav-btn { gap: 4px; font-size: 12px; }
+      .nav-btn .nav-icon { font-size: 23px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient"></div>
+  <main class="stage" id="stage">
+    <aside class="brief" aria-label="Описание игры">
+      <p class="eyebrow">Расширенная интерактивная история · 12–18 минут</p>
+      <h1>Испорченный <span>интерфейс</span></h1>
+      <p class="brief-copy">Обычный банковский вечер превращается в проверку на доверие. Пользуйтесь вымышленным приложением NOVA, замечайте подозрительные сигналы и ищите безопасный путь внутри знакомого интерфейса.</p>
+      <div class="brief-meta"><span>12 ситуаций</span><span>6 финалов</span><span>5 приложений</span><span>офлайн</span></div>
+      <div class="landing-note"><b>●</b><span>Это не тест с вопросами. Игра реагирует на ваши действия: переходы, сообщения, проверки и решения внутри банковского интерфейса.</span></div>
+      <div class="landing-actions">
+        <button class="landing-start" id="landing-start" type="button">Начать игру →</button>
+        <small>Все данные вымышлены. Игра ничего не отправляет и работает без интернета.</small>
+      </div>
+    </aside>
+    <section class="phone-wrap" aria-label="Экран мобильного банка">
+      <div class="phone-glow"></div>
+      <div class="phone" id="phone">
+        <div class="app" id="app"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    'use strict';
+
+    // =============================
+    // GAME DATA
+    // =============================
+
+    const INITIAL_BALANCE = 85700;
+    const TRANSFER_AMOUNT = 30000;
+
+    const baseTransactions = [
+      { id: 'coffee', title: 'Nook Coffee', meta: 'Сегодня, 10:42', amount: -320, icon: 'C' },
+      { id: 'market', title: 'Городской маркет', meta: 'Вчера, 19:15', amount: -2840, icon: 'M' },
+      { id: 'salary', title: 'Зарплата', meta: '10 августа', amount: 92000, icon: '↗' }
+    ];
+
+    const scenes = [
+      { id: 'unexpected-transfer', title: 'Неожиданный перевод', channel: 'NOVA' },
+      { id: 'refund-page', title: 'Страница возврата', channel: 'Браузер' },
+      { id: 'security-chat', title: 'Запрос SMS-кода', channel: 'Чат' },
+      { id: 'urgency', title: 'Давление и срочность', channel: 'NOVA' },
+      { id: 'login-attempt', title: 'Попытка входа', channel: 'NOVA' },
+      { id: 'delivery-sms', title: 'Посылка задержана', channel: 'SMS' },
+      { id: 'marketplace', title: 'Покупатель с доставкой', channel: 'Мессенджер' },
+      { id: 'phishing-mail', title: 'Письмо от NOVA', channel: 'Почта' },
+      { id: 'sim-swap', title: 'Замена SIM', channel: 'SMS' },
+      { id: 'investment', title: 'Гарантированный доход', channel: 'Мессенджер' },
+      { id: 'password-breach', title: 'Пароль в утечке', channel: 'Почта' },
+      { id: 'recovery', title: 'Контроль доступа', channel: 'Телефон' }
+    ];
+
+    const redFlagCatalog = [
+      ['outside-link', 'Ссылка ведёт вне приложения'],
+      ['urgency', 'Давление и срочность'],
+      ['secret-code', 'Запрос секретного кода'],
+      ['card-data', 'Запрос реквизитов карты'],
+      ['lookalike-domain', 'Домен-двойник'],
+      ['small-payment', 'Небольшой «проверочный» платёж'],
+      ['move-channel', 'Попытка увести из официального чата'],
+      ['sender-mismatch', 'Адрес отправителя не совпадает'],
+      ['guaranteed-profit', 'Гарантированная доходность'],
+      ['safe-account', 'Перевод на «безопасный счёт»']
+    ];
+
+    const endingCopy = {
+      guardian: {
+        icon: '★', title: 'Цифровой щит',
+        lead: 'Вы распознали цепочку атак, сохранили контроль над всеми каналами и не дали мошенникам ни одной критической зацепки.'
+      },
+      safe: {
+        icon: '✓', title: 'Атака отбита',
+        lead: 'Деньги и доступ к счёту сохранены. Вы проверяли информацию в каналах, которые открыли самостоятельно.'
+      },
+      close: {
+        icon: '!', title: 'Было близко',
+        lead: 'Вы несколько раз пошли за чужим интерфейсом, но остановились до критической ошибки. В реальности следующего шага могло бы хватить.'
+      },
+      stolen: {
+        icon: '×', title: 'Деньги украдены',
+        lead: 'Мошенники получили критические данные и воспользовались доступом. На счёте появилась новая операция.'
+      },
+      locked: {
+        icon: '⌁', title: 'Доступ перехвачен',
+        lead: 'Основные деньги удалось удержать, но один из каналов восстановления оказался у мошенников. Аккаунты потребуют долгого восстановления.'
+      },
+      cascade: {
+        icon: '×', title: 'Эффект домино',
+        lead: 'Ошибки в нескольких приложениях сложились в одну цепочку: почта, SIM и банк перестали быть независимыми линиями защиты.'
+      }
+    };
+
+    // =============================
+    // GAME STATE
+    // =============================
+
+    let timers = [];
+    let gameState = createInitialState();
+
+    function createInitialState() {
+      return {
+        started: false,
+        screen: 'start',
+        previousScreen: 'home',
+        balance: INITIAL_BALANCE,
+        risk: 0,
+        score: 500,
+        accountStatus: 'safe',
+        currentScene: 0,
+        transferReceived: false,
+        unreadMessages: 0,
+        operations: [...baseTransactions],
+        flags: {
+          clickedLink: false, checkedTransfer: false, contactedSupport: false,
+          returnedManually: false, dataShared: false, codeShared: false,
+          closedFakeChat: false, checkedSecurity: false, ignoredPressure: false,
+          clickedPressure: false, cardBlocked: false, passwordChanged: false,
+          sessionsClosed: false, ignoredLogin: false, usedOldLink: false,
+          deliveryLink: false, deliveryPaid: false, deliveryReported: false,
+          marketplaceLink: false, stayedInMarketplace: false, sharedEmail: false,
+          mailLink: false, senderChecked: false, passwordLeaked: false, attachmentOpened: false,
+          simCompromised: false, carrierChecked: false, investmentPaid: false,
+          investmentChecked: false, passwordReused: false, breachHandled: false,
+          comprehensiveRecovery: false, safeAccountTransfer: false
+        },
+        history: [],
+        redFlags: [],
+        achievements: [],
+        exploredPages: 0,
+        supportCount: 0,
+        unreadApps: { sms: 0, mail: 0, messenger: 0 },
+        modal: null,
+        pushes: [],
+        toast: '',
+        countdown: 180,
+        ending: null
+      };
+    }
+
+    function later(fn, delay) {
+      const id = window.setTimeout(() => {
+        timers = timers.filter(timerId => timerId !== id);
+        fn();
+      }, delay);
+      timers.push(id);
+      return id;
+    }
+
+    function clearTimers() {
+      timers.forEach(clearTimeout);
+      timers = [];
+    }
+
+    function record(label, impact, explanation, risky = false) {
+      gameState.history.push({ label, impact, explanation, risky });
+      const scoreDelta = risky ? -Math.max(18, Math.abs(impact) * 2) : Math.max(12, Math.abs(impact) * 2);
+      gameState.score = Math.max(0, Math.min(1000, gameState.score + scoreDelta));
+    }
+
+    function discoverFlag(id) {
+      if (!gameState.redFlags.includes(id)) {
+        gameState.redFlags.push(id);
+        gameState.score = Math.min(1000, gameState.score + 30);
+      }
+    }
+
+    function unlockAchievement(id, title, text, icon = '◆') {
+      if (gameState.achievements.some(item => item.id === id)) return;
+      gameState.achievements.push({ id, title, text, icon });
+    }
+
+    function changeRisk(delta) {
+      gameState.risk = Math.max(0, Math.min(100, gameState.risk + delta));
+      if (gameState.flags.codeShared || gameState.risk >= 75) gameState.accountStatus = 'compromised';
+      else if (gameState.risk >= 30 || gameState.flags.dataShared) gameState.accountStatus = 'threat';
+      else gameState.accountStatus = 'safe';
+    }
+
+    // =============================
+    // UI SHELL
+    // =============================
+
+    const app = document.getElementById('app');
+    const stage = document.getElementById('stage');
+
+    function statusBar() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const network = gameState.flags.simCompromised ? 'SOS' : '5G';
+      return `<div class="statusbar"><span>${time}</span><span class="status-icons"><span class="signal"><i></i><i></i><i></i><i></i></span><span>${network}</span><span class="battery"></span></span></div>`;
+    }
+
+    function brand() {
+      return `<div class="wordmark"><span class="wordmark-mark"><span>N</span></span><span>NOVA</span></div>`;
+    }
+
+    function header(title = '', back = '') {
+      if (title) return `<header class="app-header"><button class="header-back" data-action="navigate" data-screen="${back || 'home'}" aria-label="Назад">←</button><div class="header-title">${title}</div><button class="user" data-action="navigate" data-screen="journal" aria-label="Открыть журнал">АС</button></header>`;
+      return `<header class="app-header">${brand()}<button class="user" data-action="navigate" data-screen="journal" aria-label="Открыть журнал">АС</button></header>`;
+    }
+
+    function sceneProgress() {
+      if (!gameState.started || gameState.currentScene < 1 || gameState.ending) return '';
+      const value = Math.min(gameState.currentScene, scenes.length);
+      const scene = scenes[value - 1];
+      return `<div class="scene-chip"><span>${value}/${scenes.length} · ${scene ? scene.channel : ''}</span><div class="scene-track"><i style="width:${value / scenes.length * 100}%"></i></div><b>${gameState.score}</b></div>`;
+    }
+
+    function bottomNav() {
+      const bankScreens = ['home', 'transactions', 'messages', 'sender-chat', 'support', 'security', 'fake-chat'];
+      if (!gameState.started || !bankScreens.includes(gameState.screen)) return '';
+      const items = [
+        ['home', '⌂', 'Главная'], ['transactions', '↕', 'Операции'], ['messages', '✉', 'Сообщения'],
+        ['support', '?', 'Поддержка'], ['security', '◇', 'Защита']
+      ];
+      return `<nav class="bottom-nav" aria-label="Основная навигация">${items.map(([screen, icon, label]) => `
+        <button class="nav-btn ${gameState.screen === screen ? 'active' : ''}" data-action="navigate" data-screen="${screen}">
+          <span class="nav-icon">${icon}</span><span>${label}</span>${screen === 'messages' && gameState.unreadMessages ? `<span class="badge">${gameState.unreadMessages}</span>` : ''}
+        </button>`).join('')}</nav>`;
+    }
+
+    function pushes() {
+      if (!gameState.pushes.length) return '';
+      return `<div class="push-layer" aria-live="polite">${gameState.pushes.map(push => `
+        <button class="push ${push.tone || ''}" data-action="open-push" data-push="${push.id}">
+          <span class="push-icon">${push.icon || 'N'}</span><span class="push-copy"><strong>${push.title}</strong><span>${push.text}</span></span><time>сейчас</time>
+        </button>`).join('')}</div>`;
+    }
+
+    function modal() {
+      const modalData = gameState.modal;
+      if (!modalData) return '';
+      if (modalData.type === 'login') return `
+        <div class="modal-layer" role="dialog" aria-modal="true" aria-labelledby="login-title">
+          <div class="modal">
+            <div class="modal-icon danger">◇</div><h3 id="login-title">Попытка входа с нового устройства</h3>
+            <p>Это официальное уведомление NOVA. Решите, как проверить и защитить доступ.</p>
+            <div class="button-stack">
+              <button class="btn btn-primary" data-action="final-security">Открыть раздел «Безопасность»</button>
+              <button class="btn btn-ghost" data-action="final-password">Изменить пароль в NOVA</button>
+              <button class="btn btn-ghost" data-action="final-sessions">Завершить другие сессии</button>
+              <button class="btn btn-ghost" data-action="final-ignore">Ничего не делать</button>
+              <button class="btn btn-link" data-action="final-old-link">Вернуться к ссылке из сообщения</button>
+            </div>
+          </div>
+        </div>`;
+      if (modalData.type === 'pressure') return `
+        <div class="modal-layer" role="dialog" aria-modal="true" aria-labelledby="pressure-title">
+          <div class="modal">
+            <div class="modal-icon danger">!</div><h3 id="pressure-title">Счёт будет заблокирован</h3>
+            <p>«Служба безопасности» требует срочно сохранить доступ. Таймер продолжит идти, но не завершит игру.</p>
+            <div class="countdown" id="countdown">${formatCountdown(gameState.countdown)}</div>
+            <div class="button-stack">
+              <button class="btn btn-danger" data-action="pressure-save">Сохранить доступ</button>
+              <button class="btn btn-ghost" data-action="pressure-check">Проверить уведомления в банке</button>
+              <button class="btn btn-ghost" data-action="pressure-support">Открыть поддержку</button>
+              <button class="btn btn-ghost" data-action="pressure-block">Заблокировать карту</button>
+              <button class="btn btn-link" data-action="pressure-close">Закрыть сообщение</button>
+            </div>
+          </div>
+        </div>`;
+      return `
+        <div class="modal-layer" role="dialog" aria-modal="true">
+          <div class="modal ${modalData.shake ? 'shake' : ''}">
+            <div class="modal-icon ${modalData.tone === 'danger' ? 'danger' : ''}">${modalData.icon || '!'}</div>
+            <h3>${modalData.title}</h3><p>${modalData.text}</p>
+            <button class="btn btn-primary" style="width:100%" data-action="modal-close">${modalData.button || 'Понятно'}</button>
+          </div>
+        </div>`;
+    }
+
+    function render() {
+      let content = '';
+      if (gameState.screen === 'start') content = renderStart();
+      else if (gameState.screen === 'home') content = renderHome();
+      else if (gameState.screen === 'transactions') content = renderTransactions();
+      else if (gameState.screen === 'messages') content = renderMessages();
+      else if (gameState.screen === 'sender-chat') content = renderSenderChat();
+      else if (gameState.screen === 'support') content = renderSupport();
+      else if (gameState.screen === 'security') content = renderSecurity();
+      else if (gameState.screen === 'fake-chat') content = renderFakeChat();
+      else if (gameState.screen === 'external') content = renderExternal();
+      else if (gameState.screen === 'phone-home') content = renderPhoneHome();
+      else if (gameState.screen === 'sms') content = renderSMS();
+      else if (gameState.screen === 'delivery-page') content = renderDeliveryPage();
+      else if (gameState.screen === 'messenger') content = renderMessenger();
+      else if (gameState.screen === 'market-page') content = renderMarketPage();
+      else if (gameState.screen === 'mail') content = renderMail();
+      else if (gameState.screen === 'mail-page') content = renderMailPage();
+      else if (gameState.screen === 'carrier') content = renderCarrierAlert();
+      else if (gameState.screen === 'investment') content = renderInvestment();
+      else if (gameState.screen === 'breach') content = renderBreach();
+      else if (gameState.screen === 'recovery') content = renderRecovery();
+      else if (gameState.screen === 'journal') content = renderJournal();
+      else if (gameState.screen === 'final') content = renderFinal();
+
+      const externalClass = ['external', 'delivery-page', 'market-page', 'mail-page'].includes(gameState.screen) ? ' external-mode' : '';
+      app.innerHTML = `${statusBar()}<div class="screen"><div class="screen-view${externalClass}" id="screen-view">${content}</div>${bottomNav()}${pushes()}${modal()}${gameState.toast ? `<div class="toast" role="status">${gameState.toast}</div>` : ''}</div>`;
+    }
+
+    // =============================
+    // SCREEN RENDERING
+    // =============================
+
+    function renderStart() {
+      return `<div class="start-screen">
+        <div class="start-top">${brand()}<span class="fiction-badge">учебная симуляция</span></div>
+        <div class="start-art"><div class="orb"></div><span class="orbit-chip one">+30 000 ₽</span><span class="orbit-chip two">Код: 481927</span></div>
+        <div class="start-copy"><p class="eyebrow">NOVA Bank · вечер четверга</p><h2>Всё выглядит обычно</h2>
+          <p>Пользуйтесь приложением так, как считаете нужным. В нём нет вопросов с вариантами ответа — только действия и последствия.</p>
+          <button class="btn btn-primary" style="width:100%" data-action="start">Открыть банк</button>
+          <div class="start-note"><b>●</b><span>Все данные вымышлены. Игра работает локально и ничего не отправляет.</span></div>
+        </div>
+      </div>`;
+    }
+
+    function renderHome() {
+      const recent = gameState.operations.slice(0, 3);
+      const stateLabel = gameState.accountStatus === 'safe' ? 'Защита активна' : gameState.accountStatus === 'threat' ? 'Нужна проверка' : 'Доступ под угрозой';
+      const stateClass = gameState.accountStatus === 'safe' ? '' : gameState.accountStatus === 'threat' ? 'warn' : 'danger';
+      const finalDecision = gameState.currentScene === 5 ? `<div class="decision"><div class="decision-label"><b>5</b> Попытка входа</div><div class="button-stack">
+        <button class="btn btn-primary" data-action="navigate" data-screen="security">Открыть раздел «Безопасность»</button>
+        <button class="btn btn-ghost" data-action="final-password">Изменить пароль в NOVA</button>
+        <button class="btn btn-ghost" data-action="final-sessions">Завершить другие сессии</button>
+        <button class="btn btn-ghost" data-action="final-ignore">Ничего не делать</button>
+        <button class="btn btn-link" data-action="final-old-link">Вернуться к ссылке из сообщения</button>
+      </div></div>` : '';
+      return `${header()}${sceneProgress()}<div class="home">
+        <div class="hello"><div><small>Добрый вечер</small><strong>Алексей</strong></div><span class="shield-state ${stateClass}">${stateLabel}</span></div>
+        <div class="bank-card"><span class="card-label">Доступно</span><div class="balance" id="balance">${money(gameState.balance)}</div>
+          <div class="card-bottom"><span class="card-number">•••• 4821</span><span class="card-brand">NOVA · ONE</span></div>
+        </div>
+        <div class="quick-actions">
+          <button class="quick" data-action="navigate" data-screen="transactions"><b>↕</b>Перевести</button>
+          <button class="quick" data-action="navigate" data-screen="support"><b>?</b>Поддержка</button>
+          <button class="quick" data-action="navigate" data-screen="security"><b>◇</b>Защита</button>
+        </div>
+        ${finalDecision}
+        <div class="section-head"><h2>Последние операции</h2><button class="link-btn" data-action="navigate" data-screen="transactions">Все</button></div>
+        <div class="transaction-list">${recent.map(transactionRow).join('')}</div>
+      </div>`;
+    }
+
+    function transactionRow(tx) {
+      return `<div class="transaction"><span class="tx-icon">${tx.icon}</span><span class="tx-main"><strong>${tx.title}</strong><span>${tx.meta}</span></span><span class="tx-amount ${tx.amount > 0 ? 'in' : 'out'}">${tx.amount > 0 ? '+' : '−'}${money(Math.abs(tx.amount))}</span></div>`;
+    }
+
+    function renderTransactions() {
+      let decision = '';
+      if (gameState.currentScene === 1 && gameState.transferReceived) decision = `<div class="decision"><div class="decision-label"><b>1</b> Неизвестный перевод</div><div class="button-stack">
+        <button class="btn btn-primary" data-action="verify-transfer">Проверить через поддержку</button>
+        <button class="btn btn-ghost" data-action="manual-return">Вернуть отправителю самостоятельно</button>
+        <button class="btn btn-ghost" data-action="navigate" data-screen="sender-chat">Открыть сообщение отправителя</button>
+      </div></div>`;
+      return `${header('Операции', 'home')}${sceneProgress()}<div class="page">
+        <p class="page-intro">История по карте •••• 4821. Операции отображаются только внутри NOVA.</p>
+        <div class="transaction-list">${gameState.operations.map(transactionRow).join('')}</div>${decision}
+      </div>`;
+    }
+
+    function renderMessages() {
+      gameState.unreadMessages = 0;
+      const attackThread = gameState.currentScene >= 3 ? `<button class="message-row" data-action="navigate" data-screen="fake-chat"><span class="message-avatar suspicious">!</span><span class="message-copy"><strong>Служба безопасности <time>сейчас</time></strong><span>Срочно подтвердите личность для защиты счёта</span></span></button>` : '';
+      const senderThread = gameState.transferReceived ? `<button class="message-row" data-action="navigate" data-screen="sender-chat"><span class="message-avatar suspicious">А</span><span class="message-copy"><strong>Антон Сорокин <time>сейчас</time></strong><span>Случайно перевёл вам деньги. Верните по ссылке…</span></span></button>` : '';
+      return `${header('Сообщения', 'home')}${sceneProgress()}<div class="page"><p class="page-intro">Диалоги и системные сообщения. NOVA никогда не запрашивает коды в чате.</p><div class="message-list">${attackThread}${senderThread}<button class="message-row" data-action="navigate" data-screen="support"><span class="message-avatar">N</span><span class="message-copy"><strong>NOVA Поддержка <time>вчера</time></strong><span>Ваше обращение закрыто</span></span></button></div></div>`;
+    }
+
+    function renderSenderChat() {
+      const actionBlock = gameState.currentScene === 1 ? `<div class="decision"><div class="decision-label"><b>1</b> Как поступить?</div><div class="button-stack">
+        <button class="btn btn-primary" data-action="open-link">Открыть ссылку для возврата</button>
+        <button class="btn btn-ghost" data-action="navigate" data-screen="transactions">Проверить операцию</button>
+        <button class="btn btn-ghost" data-action="verify-transfer">Написать в поддержку NOVA</button>
+        <button class="btn btn-ghost" data-action="manual-return">Создать обратный перевод</button>
+      </div></div>` : `<div class="info-banner warn">Ссылка осталась в истории диалога. Отправитель больше не отвечает.</div>`;
+      return `${header('Антон Сорокин', 'messages')}${sceneProgress()}<div class="chat">
+        <div class="chat-body"><div class="bubble">Здравствуйте. Я случайно перевёл вам 30 000 ₽. Пожалуйста, верните деньги.</div><div class="bubble"><b>nova-return.help/4821</b><br>Здесь всё оформляется автоматически.</div></div>${actionBlock}
+      </div>`;
+    }
+
+    function renderSupport() {
+      const sceneAction = gameState.currentScene === 1 ? `<button class="btn btn-primary" data-action="support-transfer">Проверить неизвестный перевод</button>`
+        : gameState.currentScene === 3 ? `<button class="btn btn-primary" data-action="support-code">Сообщить о запросе кода</button>`
+        : gameState.currentScene === 4 ? `<button class="btn btn-primary" data-action="support-pressure">Проверить угрозу блокировки</button>` : '';
+      return `${header('Поддержка NOVA', 'home')}${sceneProgress()}<div class="chat">
+        <div class="chat-head"><span class="message-avatar">N</span><div><strong>Официальный чат</strong><span>● защищённый канал</span></div></div>
+        <div class="chat-body"><div class="bubble">Здравствуйте, Алексей! Я виртуальный помощник NOVA. Здесь можно проверить операцию или защитить доступ.</div>${gameState.flags.contactedSupport ? `<div class="bubble">Обращение зарегистрировано. Банк не просит возвращать ошибочный перевод по внешней ссылке и не запрашивает коды.</div>` : ''}</div>
+        <div class="chat-actions">${sceneAction || `<div class="info-banner">Сейчас активных обращений нет. Вы открыли поддержку самостоятельно внутри приложения.</div>`}</div>
+      </div>`;
+    }
+
+    function renderSecurity() {
+      let sceneAction = '';
+      if (gameState.currentScene === 3) sceneAction = `<div class="info-banner">В официальном разделе нет запросов на передачу кода. Подозрительный чат можно закрыть.</div><button class="btn btn-primary" style="width:100%" data-action="security-code-check">Продолжить без передачи кода</button>`;
+      if (gameState.currentScene === 4) sceneAction = `<div class="info-banner">Предупреждений о блокировке нет. Таймер существует только в сообщении неизвестного отправителя.</div><button class="btn btn-primary" style="width:100%" data-action="security-pressure-check">Продолжить проверку</button>`;
+      if (gameState.currentScene === 5) sceneAction = `<div class="decision"><div class="decision-label"><b>5</b> Защитить доступ</div><div class="button-stack"><button class="btn btn-primary" data-action="final-password">Изменить пароль</button><button class="btn btn-ghost" data-action="final-sessions">Завершить другие сессии</button><button class="btn btn-ghost" data-action="final-block">Заблокировать карту</button></div></div>`;
+      return `${header('Безопасность', 'home')}${sceneProgress()}<div class="page">
+        <p class="page-intro">Управляйте доступом только из этого раздела. Сотрудники NOVA не запрашивают пароли, CVV и коды.</p>
+        ${sceneAction}
+        <div class="security-list">
+          <div class="security-item"><span class="security-icon">✓</span><div><strong>Вход в приложение</strong><span>${gameState.currentScene === 5 ? 'Обнаружено новое устройство' : 'Только это устройство'}</span></div><button data-action="noop">›</button></div>
+          <div class="security-item"><span class="security-icon">▣</span><div><strong>Карта •••• 4821</strong><span>${gameState.flags.cardBlocked ? 'Заблокирована' : 'Активна · лимиты включены'}</span></div><button data-action="noop">›</button></div>
+          <div class="security-item"><span class="security-icon">⌁</span><div><strong>Пароль и сессии</strong><span>${gameState.flags.passwordChanged ? 'Пароль изменён' : 'Изменён 48 дней назад'}</span></div><button data-action="noop">›</button></div>
+        </div>
+      </div>`;
+    }
+
+    function renderFakeChat() {
+      const codeBubble = gameState.currentScene >= 3 ? `<div class="bubble system">SMS от NOVA: код <b>481927</b>. Никому не сообщайте его.</div>` : '';
+      const decisions = gameState.currentScene === 3 ? `<div class="decision"><div class="decision-label"><b>3</b> Запрос кода</div><div class="button-stack">
+        <div class="code-compose"><input id="code-input" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Шестизначный код" aria-label="Код из SMS"><button data-action="send-code" aria-label="Отправить код">➤</button></div>
+        <button class="btn btn-ghost" data-action="close-fake-chat">Закрыть чат</button>
+        <button class="btn btn-ghost" data-action="navigate" data-screen="security">Открыть раздел «Безопасность»</button>
+        <button class="btn btn-ghost" data-action="navigate" data-screen="support">Открыть поддержку NOVA</button>
+      </div></div>` : '';
+      return `${header('Служба безопасности', 'messages')}${sceneProgress()}<div class="chat">
+        <div class="chat-head"><span class="message-avatar suspicious">!</span><div><strong>Служба безопасности</strong><span class="fake-online">● ожидает ответа</span></div></div>
+        <div class="chat-body"><div class="bubble">Мы обнаружили подозрительную активность. Чтобы отменить операцию, сообщите шестизначный код из SMS.</div>${codeBubble}</div>${decisions}
+      </div>`;
+    }
+
+    function renderExternal() {
+      return `<div class="external"><div class="browser-bar"><div class="browser-controls"><i></i><i></i><i></i></div><div class="address bad">ⓘ&nbsp; nova-return.help / secure-refund</div></div>
+        <div class="return-page"><div class="fake-logo"><i>✓</i> SafeReturn</div><h2>Безопасный возврат платежа</h2><p>Для подтверждения возврата укажите данные карты получателя.</p>
+          <form id="fake-form" autocomplete="off"><label class="form-field">Номер карты<input inputmode="numeric" name="card" maxlength="19" placeholder="0000 0000 0000 0000"></label>
+          <div class="form-row"><label class="form-field">Срок действия<input name="expiry" maxlength="5" placeholder="00/00"></label><label class="form-field">CVV<input inputmode="numeric" name="cvv" maxlength="3" placeholder="000"></label></div>
+          <button class="fake-submit" type="submit">Подтвердить возврат</button></form>
+          <button class="external-return" data-action="return-bank">Вернуться в приложение NOVA</button><div class="fake-foot">© SafeReturn Payment Service · Защищённое соединение</div>
+        </div></div>`;
+    }
+
+    function appBackbar(title) {
+      return `<div class="app-backbar"><button data-action="navigate" data-screen="phone-home">‹ На экран</button><strong>${title}</strong></div>${sceneProgress()}`;
+    }
+
+    function renderPhoneHome() {
+      const scene = scenes[Math.max(0, gameState.currentScene - 1)];
+      const hint = gameState.currentScene === 6 ? 'Новое SMS о задержанной посылке.'
+        : gameState.currentScene === 7 ? 'Покупатель написал в мессенджере.'
+        : gameState.currentScene === 8 ? 'Пришло письмо с логотипом NOVA.'
+        : gameState.currentScene === 9 ? 'Оператор связи предупреждает о замене SIM.'
+        : gameState.currentScene === 10 ? 'В мессенджере появилось инвестиционное предложение.'
+        : gameState.currentScene === 11 ? 'Почта сообщает об утечке пароля.'
+        : gameState.currentScene === 12 ? 'Пора восстановить контроль над каналами.' : 'Откройте нужное приложение.';
+      return `<div class="phone-home">
+        <div class="os-head"><div><small>Вечер продолжается</small><strong>Телефон Алексея</strong></div><span class="os-score">${gameState.score} очков</span></div>
+        <div class="app-grid">
+          <button class="app-icon-btn" data-action="open-app" data-app="bank"><span class="app-icon-tile">N</span><span>NOVA</span></button>
+          <button class="app-icon-btn" data-action="open-app" data-app="sms"><span class="app-icon-tile sms">✉</span><span>SMS</span>${gameState.unreadApps.sms ? `<b class="app-badge">${gameState.unreadApps.sms}</b>` : ''}</button>
+          <button class="app-icon-btn" data-action="open-app" data-app="mail"><span class="app-icon-tile mail">@</span><span>Почта</span>${gameState.unreadApps.mail ? `<b class="app-badge">${gameState.unreadApps.mail}</b>` : ''}</button>
+          <button class="app-icon-btn" data-action="open-app" data-app="messenger"><span class="app-icon-tile chatapp">◌</span><span>Связь</span>${gameState.unreadApps.messenger ? `<b class="app-badge">${gameState.unreadApps.messenger}</b>` : ''}</button>
+          <button class="app-icon-btn" data-action="open-app" data-app="browser"><span class="app-icon-tile browserapp">◎</span><span>Браузер</span></button>
+          <button class="app-icon-btn" data-action="navigate" data-screen="journal"><span class="app-icon-tile journalapp">≡</span><span>Журнал</span></button>
+        </div>
+        <div class="wave-card"><span>Ситуация ${gameState.currentScene}/${scenes.length}</span><h2>${scene ? scene.title : 'Вторая волна'}</h2><p>${hint}</p></div>
+        <div class="os-dock"><button data-action="open-app" data-app="bank" aria-label="NOVA">N</button><button data-action="open-app" data-app="sms" aria-label="SMS">✉</button><button data-action="open-app" data-app="messenger" aria-label="Мессенджер">◌</button></div>
+      </div>`;
+    }
+
+    function renderSMS() {
+      const targeted = gameState.flags.dataShared || gameState.flags.codeShared;
+      return `${appBackbar('SMS')}<div class="channel-page">
+        <div class="channel-source"><span class="channel-logo sms">D</span><div><strong>DELIVERY</strong><span>Сервис доставки · неизвестный номер</span></div><time>сейчас</time></div>
+        <div class="channel-message"><h3>Посылка задержана</h3><p>${targeted ? 'Алексей, доставка по адресу из профиля NOVA приостановлена.' : 'Не удалось вручить отправление. Уточните адрес доставки.'}</p><p>Для повторной доставки требуется сервисный платёж 199 ₽.</p><span class="suspicious-link">delivery-track24.ru/pay/199</span></div>
+        <div class="decision"><div class="decision-label"><b>6</b> Что сделать?</div><div class="button-stack">
+          <button class="btn btn-primary" data-action="delivery-open">Открыть страницу оплаты</button>
+          <button class="btn btn-ghost" data-action="delivery-verify">Проверить трек-номер на официальном сайте</button>
+          <button class="btn btn-ghost" data-action="delivery-report">Отметить как спам</button>
+          <button class="btn btn-link" data-action="delivery-ignore">Закрыть SMS</button>
+        </div></div>
+      </div>`;
+    }
+
+    function renderDeliveryPage() {
+      return `<div class="external"><div class="browser-bar"><div class="browser-controls"><i></i><i></i><i></i></div><div class="address bad">ⓘ delivery-track24.ru / secure-pay</div></div><div class="fake-site">
+        <div class="fake-site-brand"><i>D</i> Delivery Track</div><h2>Повторная доставка</h2><p>Отправление сохранено за вами ещё на 09:42. Оплатите повторный выезд курьера.</p>
+        <div class="fake-price">Сервисный платёж<strong>199 ₽</strong></div>
+        <label class="form-field">Карта для оплаты<input value="•••• •••• •••• 4821" readonly></label>
+        <button class="fake-submit" data-action="delivery-pay">Оплатить 199 ₽</button>
+        <button class="external-return" data-action="delivery-return">Закрыть страницу</button>
+        <div class="fake-foot">Delivery Track Payment · Неофициальный сервис</div>
+      </div></div>`;
+    }
+
+    function renderMessenger() {
+      const leak = gameState.flags.dataShared ? ' Вижу, карта заканчивается на 4821 — всё верно?' : '';
+      return `${appBackbar('Связь')}<div class="channel-page">
+        <div class="channel-source"><span class="channel-logo market">К</span><div><strong>Кирилл · покупатель</strong><span>Объявление «Наушники»</span></div><time>сейчас</time></div>
+        <div class="channel-message"><p>Здравствуйте! Заберу без торга. Уже оформил курьера.${leak}</p><p>Чтобы получить 7 500 ₽, подтвердите карту по ссылке:</p><span class="suspicious-link">market-delivery.cyou/get/7500</span></div>
+        <div class="decision"><div class="decision-label"><b>7</b> Продажа</div><div class="button-stack">
+          <button class="btn btn-primary" data-action="market-open">Получить деньги по ссылке</button>
+          <button class="btn btn-ghost" data-action="market-stay">Продолжить только внутри маркетплейса</button>
+          <button class="btn btn-ghost" data-action="market-report">Пожаловаться на пользователя</button>
+          <button class="btn btn-ghost" data-action="market-email">Отправить свой email для чека</button>
+        </div></div>
+      </div>`;
+    }
+
+    function renderMarketPage() {
+      return `<div class="external"><div class="browser-bar"><div class="browser-controls"><i></i><i></i><i></i></div><div class="address bad">ⓘ market-delivery.cyou / receive</div></div><div class="fake-site">
+        <div class="fake-site-brand"><i>М</i> Маркет Доставка</div><h2>Вам отправлено 7 500 ₽</h2><p>Для зачисления подтвердите карту и остаток на счёте. Проверка необходима только один раз.</p>
+        <div class="site-warning">Настоящий маркетплейс не проверяет остаток на карте получателя.</div>
+        <button class="fake-submit" data-action="market-confirm">Подтвердить карту</button>
+        <button class="external-return" data-action="market-return">Вернуться в мессенджер</button>
+      </div></div>`;
+    }
+
+    function renderMail() {
+      const personalized = gameState.flags.sharedEmail ? 'Ваш чек по продаже на 7 500 ₽ готов.' : 'Ежемесячная выписка NOVA сформирована.';
+      return `${appBackbar('Почта')}<div class="channel-page">
+        <div class="channel-source"><span class="channel-logo mail">N</span><div><strong>NOVA Документы</strong><span>notice@nova-docs.support</span></div><time>сейчас</time></div>
+        <div class="channel-message"><h3>${personalized}</h3><p>Документ зашифрован. Для просмотра подтвердите NOVA ID до конца дня.</p><span class="suspicious-link">nova-docs.support/id/verify</span><div class="sender-details">Отображаемое имя: NOVA Документы<br>Фактический домен: nova-docs.support</div></div>
+        <div class="decision"><div class="decision-label"><b>8</b> Письмо</div><div class="button-stack">
+          <button class="btn btn-primary" data-action="mail-open">Открыть документ</button>
+          <button class="btn btn-ghost" data-action="mail-sender">Проверить адрес отправителя</button>
+          <button class="btn btn-ghost" data-action="mail-report">Отметить как фишинг</button>
+          <button class="btn btn-ghost" data-action="mail-attachment">Скачать вложение «Выписка.zip»</button>
+        </div></div>
+      </div>`;
+    }
+
+    function renderMailPage() {
+      return `<div class="external"><div class="browser-bar"><div class="browser-controls"><i></i><i></i><i></i></div><div class="address bad">ⓘ nova-docs.support / nova-id</div></div><div class="fake-site">
+        <div class="fake-site-brand"><i>N</i> NOVA ID</div><h2>Документ защищён</h2><p>Сессия истекла. Нажмите ниже, чтобы повторно использовать сохранённый пароль NOVA.</p>
+        <div class="site-warning">Страница открыта вне приложения банка. Домен не является официальным.</div>
+        <button class="fake-submit" data-action="mail-login">Продолжить с сохранённым паролем</button>
+        <button class="external-return" data-action="mail-return">Закрыть страницу</button>
+      </div></div>`;
+    }
+
+    function renderCarrierAlert() {
+      const aggressive = gameState.flags.codeShared || gameState.flags.passwordLeaked;
+      return `${appBackbar('SMS')}<div class="channel-page">
+        <div class="channel-source"><span class="channel-logo sms">S</span><div><strong>SIM Service</strong><span>Сообщение оператора?</span></div><time>сейчас</time></div>
+        <div class="channel-message"><h3>Запрошена замена SIM</h3><p>${aggressive ? 'Заявка уже подтверждена данными из вашего профиля.' : 'Если вы не создавали заявку, отмените её в течение 10 минут.'}</p><p>Для отмены позвоните по номеру +7 900 000-11-90 и назовите код из следующего SMS.</p></div>
+        <div class="decision"><div class="decision-label"><b>9</b> Мобильный номер</div><div class="button-stack">
+          <button class="btn btn-primary" data-action="sim-call">Позвонить по номеру из SMS</button>
+          <button class="btn btn-ghost" data-action="sim-official">Открыть официальное приложение оператора</button>
+          <button class="btn btn-ghost" data-action="sim-bank">Проверить способы восстановления в NOVA</button>
+          <button class="btn btn-link" data-action="sim-ignore">Ничего не делать</button>
+        </div></div>
+      </div>`;
+    }
+
+    function renderInvestment() {
+      const amount = gameState.balance > 60000 ? '50 000 ₽' : '10 000 ₽';
+      return `${appBackbar('Связь')}<div class="channel-page">
+        <div class="channel-source"><span class="channel-logo market">↑</span><div><strong>Закрытый клуб «Вектор»</strong><span>Рекламное сообщение</span></div><time>сейчас</time></div>
+        <div class="channel-message"><h3>Доход 18% за 48 часов</h3><p>Алгоритм NOVA AI страхует каждую сделку. Мест осталось: 3.</p><p>Рекомендуемый взнос: <b>${amount}</b>. Возврат гарантирован договором.</p></div>
+        <div class="decision"><div class="decision-label"><b>10</b> Предложение</div><div class="button-stack">
+          <button class="btn btn-primary" data-action="invest-pay">Внести ${amount}</button>
+          <button class="btn btn-ghost" data-action="invest-check">Проверить организацию в реестре</button>
+          <button class="btn btn-ghost" data-action="invest-details">Запросить договор и реквизиты</button>
+          <button class="btn btn-link" data-action="invest-ignore">Заблокировать рекламу</button>
+        </div></div>
+      </div>`;
+    }
+
+    function renderBreach() {
+      const realThreat = gameState.flags.passwordLeaked || gameState.flags.dataShared;
+      return `${appBackbar('Почта')}<div class="channel-page">
+        <div class="channel-source"><span class="channel-logo mail">!</span><div><strong>Мониторинг паролей</strong><span>security@device.local</span></div><time>сейчас</time></div>
+        <div class="channel-message"><h3>${realThreat ? 'Пароль обнаружен в утечке' : 'Проверьте безопасность пароля'}</h3><p>${realThreat ? 'Пароль, похожий на сохранённый для NOVA, появился в открытой базе.' : 'Сохранённый пароль используется давно. Признаков входа пока нет.'}</p><p>Изменяйте пароль только в приложении, которого касается предупреждение.</p></div>
+        <div class="decision"><div class="decision-label"><b>11</b> Пароль</div><div class="button-stack">
+          <button class="btn btn-primary" data-action="breach-unique">Открыть NOVA и создать уникальный пароль</button>
+          <button class="btn btn-ghost" data-action="breach-reuse">Поставить такой же пароль, как у почты</button>
+          <button class="btn btn-ghost" data-action="breach-sessions">Сначала завершить все сессии</button>
+          <button class="btn btn-link" data-action="breach-ignore">Игнорировать предупреждение</button>
+        </div></div>
+      </div>`;
+    }
+
+    function renderRecovery() {
+      const channels = [gameState.flags.codeShared && 'код', gameState.flags.passwordLeaked && 'пароль', gameState.flags.simCompromised && 'SIM'].filter(Boolean);
+      return `${appBackbar('Центр защиты')}<div class="page">
+        <p class="page-intro">События в разных приложениях связаны. ${channels.length ? `Под угрозой: ${channels.join(', ')}.` : 'Критические каналы пока под вашим контролем.'}</p>
+        <div class="info-banner warn">Защищайте каждый канал из его официального интерфейса. Банк не предлагает переводить деньги на другой счёт «для сохранности».</div>
+        <div class="recovery-grid">
+          <button class="recovery-option" data-action="recover-all"><b>✓</b><span><strong>Комплексно защитить доступ</strong><span>Новый пароль, завершение сессий, блокировка карты и проверка SIM.</span></span></button>
+          <button class="recovery-option" data-action="recover-bank"><b>N</b><span><strong>Открыть NOVA и завершить сессии</strong><span>Защитить банк, не меняя остальные каналы.</span></span></button>
+          <button class="recovery-option danger" data-action="recover-safe-account"><b>↗</b><span><strong>Перевести деньги на «безопасный счёт»</strong><span>Следовать инструкции из последнего сообщения.</span></span></button>
+          <button class="recovery-option" data-action="recover-off"><b>○</b><span><strong>Выключить телефон</strong><span>Остановить действия сейчас, но оставить доступы без изменений.</span></span></button>
+        </div>
+      </div>`;
+    }
+
+    function renderJournal() {
+      const back = gameState.currentScene >= 6 ? 'phone-home' : (gameState.previousScreen || 'home');
+      const flags = redFlagCatalog.map(([id, label]) => `<span class="red-flag ${gameState.redFlags.includes(id) ? '' : 'locked'}">${gameState.redFlags.includes(id) ? '✓' : '•'} ${label}</span>`).join('');
+      const timeline = gameState.history.length ? gameState.history.slice().reverse().map(item => `<div class="timeline-item ${item.risky ? 'risky' : ''}"><strong>${item.label}</strong><br>${item.explanation}</div>`).join('') : `<div class="info-banner">Действия появятся здесь по ходу игры.</div>`;
+      const achievements = gameState.achievements.length ? gameState.achievements.map(item => `<div class="achievement"><i>${item.icon}</i><div><strong>${item.title}</strong><span>${item.text}</span></div></div>`).join('') : `<div class="info-banner">Первое достижение ещё впереди.</div>`;
+      return `${header('Журнал', back)}<div class="journal"><div class="score-hero"><small>Текущий счёт</small><div class="score-number">${gameState.score} <span>/ 1000</span></div></div>
+        <div class="collection-grid"><div class="collection-card"><b>${gameState.redFlags.length}/10</b><span>красных флагов обнаружено</span></div><div class="collection-card"><b>${gameState.achievements.length}</b><span>достижений открыто</span></div></div>
+        <div class="section-head"><h2>Красные флаги</h2></div><div class="red-flags">${flags}</div>
+        <div class="section-head"><h2>Достижения</h2></div><div class="achievement-list">${achievements}</div>
+        <div class="section-head"><h2>Журнал действий</h2></div><div class="timeline">${timeline}</div>
+      </div>`;
+    }
+
+    function renderFinal() {
+      const key = gameState.ending;
+      const copy = endingCopy[key];
+      const risk = gameState.risk;
+      const debrief = gameState.history.slice(-8).map(item => `<div class="debrief-item ${item.risky ? 'risky' : ''}"><b>${item.risky ? '!' : '✓'}</b><span><strong>${item.label}.</strong> ${item.explanation}</span></div>`).join('');
+      return `<div class="final ${key}"><span class="final-kicker">Развязка · риск раскрыт</span><div class="final-mark">${copy.icon}</div><h2>${copy.title}</h2><p class="final-lead">${copy.lead}</p>
+        <div class="final-balance"><span>Итоговый баланс</span><strong>${money(gameState.balance)}</strong></div>
+        <div class="final-stats"><div class="final-stat"><b>${gameState.score}</b><span>очков</span></div><div class="final-stat"><b>${gameState.redFlags.length}/10</b><span>флагов</span></div><div class="final-stat"><b>${gameState.achievements.length}</b><span>достижений</span></div></div>
+        <div class="risk-reveal"><div class="risk-top"><span>Накопленный риск</span><span>${risk}/100</span></div><div class="risk-bar"><i style="width:${Math.max(risk, 2)}%"></i></div><small>Во время игры этот показатель был скрыт. Его меняли ваши действия.</small></div>
+        <div class="debrief"><h3>Что повлияло на результат</h3>${debrief}</div>
+        ${gameState.achievements.length ? `<div class="debrief"><h3>Открытые достижения</h3>${gameState.achievements.map(item => `<div class="achievement"><i>${item.icon}</i><div><strong>${item.title}</strong><span>${item.text}</span></div></div>`).join('')}</div>` : ''}
+        <button class="btn btn-primary" style="width:100%" data-action="restart">Попробовать ещё раз</button>
+      </div>`;
+    }
+
+    // =============================
+    // GAME LOGIC
+    // =============================
+
+    function startGame() {
+      clearTimers();
+      gameState = createInitialState();
+      gameState.started = true;
+      gameState.screen = 'home';
+      stage.classList.add('game-active');
+      render();
+      later(beginSituationOne, 650);
+    }
+
+    function beginSituationOne() {
+      gameState.currentScene = 1;
+      gameState.transferReceived = true;
+      gameState.balance += TRANSFER_AMOUNT;
+      gameState.operations.unshift({ id: 'unknown', title: 'Перевод от А. Сорокина', meta: 'Сегодня, только что', amount: TRANSFER_AMOUNT, icon: 'А' });
+      addPush({ id: 'transfer', title: 'Получен перевод', text: '+30 000 ₽ от А. Сорокина', icon: '↗' });
+      render();
+      later(() => {
+        gameState.unreadMessages = 1;
+        addPush({ id: 'sender', title: 'Антон Сорокин', text: 'Случайно перевёл деньги. Верните по ссылке…', icon: 'А', tone: 'warning' });
+        render();
+      }, 1500);
+    }
+
+    function addPush(push) {
+      gameState.pushes = [push];
+      later(() => {
+        gameState.pushes = gameState.pushes.filter(item => item.id !== push.id);
+        render();
+      }, 6500);
+    }
+
+    function dismissPush(id) {
+      gameState.pushes = gameState.pushes.filter(item => item.id !== id);
+    }
+
+    function navigate(screen) {
+      if (screen === gameState.screen) return;
+      gameState.previousScreen = gameState.screen;
+      gameState.screen = screen;
+      render();
+    }
+
+    function openSuspiciousLink() {
+      gameState.flags.clickedLink = true;
+      changeRisk(20);
+      record('Открыли ссылку из сообщения', 20, 'Адрес и канал не принадлежали банку; риск вырос.', true);
+      gameState.currentScene = 2;
+      gameState.screen = 'external';
+      dismissPush('sender');
+      render();
+    }
+
+    function verifyTransfer(source = 'operations') {
+      gameState.flags.checkedTransfer = true;
+      changeRisk(-5);
+      record('Проверили перевод внутри банка', -5, 'Операция была сверена в официальном интерфейсе.', false);
+      gameState.screen = 'support';
+      render();
+      showToast(source === 'operations' ? 'Операция найдена. Поддержка подключена.' : 'Открыт официальный канал NOVA');
+    }
+
+    function manualReturn() {
+      gameState.flags.returnedManually = true;
+      gameState.balance -= TRANSFER_AMOUNT;
+      gameState.operations.unshift({ id: 'return', title: 'Перевод А. Сорокину', meta: 'Сегодня, только что', amount: -TRANSFER_AMOUNT, icon: 'А' });
+      changeRisk(15);
+      record('Вернули деньги без проверки', 15, 'Вы действовали по инструкции неизвестного отправителя.', true);
+      beginSituationThree();
+    }
+
+    function supportTransfer() {
+      gameState.flags.contactedSupport = true;
+      gameState.supportCount += 1;
+      gameState.flags.checkedTransfer = true;
+      changeRisk(-10);
+      discoverFlag('outside-link');
+      record('Обратились в официальную поддержку', -10, 'Банк подтвердил безопасный порядок возврата.', false);
+      gameState.modal = { title: 'Перевод принят на проверку', text: 'Не возвращайте средства самостоятельно и не вводите данные карты на сторонних страницах.', icon: '✓', next: 'scene3' };
+      render();
+    }
+
+    function submitFakeForm() {
+      gameState.flags.dataShared = true;
+      changeRisk(38);
+      discoverFlag('card-data');
+      record('Ввели данные карты на внешней странице', 38, 'Форма не принадлежала NOVA и имитировала безопасный сервис.', true);
+      gameState.modal = { title: 'Не удалось выполнить операцию', text: 'Страница получила введённые данные, но показала обычную ошибку. Возврат не выполнен.', icon: '×', tone: 'danger', shake: true, next: 'scene3' };
+      stage.classList.add('danger-pulse');
+      later(() => stage.classList.remove('danger-pulse'), 650);
+      render();
+    }
+
+    function returnToBank() {
+      record('Вернулись с внешней страницы', 0, 'Вы остановились до передачи данных карты.', false);
+      beginSituationThree();
+    }
+
+    function beginSituationThree() {
+      gameState.currentScene = 3;
+      gameState.screen = 'home';
+      gameState.modal = null;
+      gameState.unreadMessages += 1;
+      addPush({ id: 'security', title: 'Служба безопасности', text: 'Срочно подтвердите личность для защиты счёта', icon: '!', tone: 'warning' });
+      render();
+    }
+
+    function sendCode() {
+      const input = document.getElementById('code-input');
+      if (!input || !/^\d{6}$/.test(input.value.trim())) {
+        showToast('Введите шестизначный код из SMS');
+        return;
+      }
+      gameState.flags.codeShared = true;
+      changeRisk(48);
+      record('Передали код подтверждения', 48, 'Код дал мошенникам возможность подтвердить действие от вашего имени.', true);
+      gameState.operations.unshift({ id: 'login', title: 'Вход с нового устройства', meta: 'Неизвестное устройство', amount: 0, icon: '!' });
+      gameState.modal = { title: 'Выполнен вход с нового устройства', text: 'Устройство Android, Санкт-Петербург. Если это не вы, откройте раздел «Безопасность».', icon: '!', tone: 'danger', next: 'scene4' };
+      render();
+    }
+
+    function safeFromCode(type) {
+      if (type === 'close') {
+        gameState.flags.closedFakeChat = true;
+        record('Закрыли чат с запросом кода', 0, 'Код остался у вас; канал не получил подтверждение.', false);
+      } else if (type === 'security') {
+        gameState.flags.checkedSecurity = true;
+        changeRisk(-10);
+        record('Проверили официальный раздел безопасности', -10, 'Внутри банка запроса на код не было.', false);
+      } else {
+        gameState.flags.contactedSupport = true;
+        gameState.supportCount += 1;
+        changeRisk(-10);
+        record('Сообщили о запросе кода поддержке', -10, 'Официальный канал подтвердил попытку мошенничества.', false);
+      }
+      discoverFlag('secret-code');
+      beginSituationFour();
+    }
+
+    function beginSituationFour() {
+      gameState.currentScene = 4;
+      gameState.screen = 'home';
+      gameState.modal = { type: 'pressure' };
+      gameState.countdown = 180;
+      render();
+      tickCountdown();
+    }
+
+    function tickCountdown() {
+      if (!gameState.modal || gameState.modal.type !== 'pressure') return;
+      const node = document.getElementById('countdown');
+      if (node) node.textContent = formatCountdown(gameState.countdown);
+      if (gameState.countdown > 0) gameState.countdown -= 1;
+      later(tickCountdown, 1000);
+    }
+
+    function resolvePressure(action) {
+      gameState.modal = null;
+      if (action === 'save') {
+        gameState.flags.clickedPressure = true;
+        changeRisk(25);
+        record('Поддались таймеру и нажали «Сохранить доступ»', 25, 'Срочность заставила действовать внутри чужого сообщения.', true);
+      } else if (action === 'close') {
+        gameState.flags.ignoredPressure = true;
+        record('Закрыли сообщение с таймером', 0, 'Декоративный отсчёт не повлиял на счёт.', false);
+      } else if (action === 'check') {
+        gameState.flags.checkedSecurity = true;
+        changeRisk(-5);
+        record('Проверили уведомления в NOVA', -5, 'Официальных предупреждений о блокировке не было.', false);
+        gameState.screen = 'security';
+        render();
+        return;
+      } else if (action === 'support') {
+        gameState.flags.contactedSupport = true;
+        gameState.supportCount += 1;
+        changeRisk(-10);
+        record('Проверили таймер через поддержку', -10, 'Банк подтвердил, что счёт не блокируется.', false);
+        gameState.screen = 'support';
+        render();
+        return;
+      } else if (action === 'block') {
+        gameState.flags.cardBlocked = true;
+        changeRisk(-20);
+        record('Заблокировали карту в приложении', -20, 'Защитное действие выполнено в официальном разделе.', false);
+      }
+      if (action !== 'save') discoverFlag('urgency');
+      beginSituationFive();
+    }
+
+    function beginSituationFive() {
+      gameState.currentScene = 5;
+      gameState.screen = 'home';
+      gameState.modal = null;
+      gameState.operations.unshift({ id: 'attempt', title: 'Попытка входа', meta: 'Новое устройство · отклонено', amount: 0, icon: '!' });
+      addPush({ id: 'login', title: 'NOVA · Безопасность', text: 'Обнаружена попытка входа с нового устройства', icon: '◇', tone: 'danger' });
+      render();
+      later(() => {
+        if (gameState.currentScene === 5 && !gameState.ending) {
+          gameState.modal = { type: 'login' };
+          render();
+        }
+      }, 900);
+    }
+
+    function showLoginDecision() {
+      gameState.modal = null;
+      gameState.screen = 'security';
+      render();
+    }
+
+    function finalAction(action) {
+      if (action === 'ignore') {
+        gameState.flags.ignoredLogin = true;
+        changeRisk(18);
+        record('Проигнорировали реальную попытку входа', 18, 'Официальное предупреждение осталось без реакции.', true);
+      } else if (action === 'old-link') {
+        gameState.flags.usedOldLink = true;
+        changeRisk(32);
+        record('Снова открыли старую ссылку', 32, 'Для реальной угрозы был выбран уже скомпрометированный канал.', true);
+      } else if (action === 'password') {
+        gameState.flags.passwordChanged = true;
+        changeRisk(-20);
+        record('Изменили пароль в NOVA', -20, 'Новый пароль закрыл прежние данные доступа.', false);
+      } else if (action === 'sessions') {
+        gameState.flags.sessionsClosed = true;
+        changeRisk(-25);
+        record('Завершили другие сессии', -25, 'Неизвестное устройство потеряло доступ.', false);
+      } else if (action === 'block') {
+        gameState.flags.cardBlocked = true;
+        changeRisk(-20);
+        record('Заблокировали карту', -20, 'Операции по карте были остановлены из официального интерфейса.', false);
+      }
+      beginSituationSix();
+    }
+
+    function beginSituationSix() {
+      gameState.currentScene = 6;
+      gameState.screen = 'phone-home';
+      gameState.modal = null;
+      gameState.unreadApps.sms = 1;
+      unlockAchievement('first-wave', 'Первая волна', 'Вы дошли до атаки через несколько приложений.', 'Ⅰ');
+      addPush({ id: 'delivery', title: 'DELIVERY', text: 'Посылка задержана. Требуется оплата 199 ₽', icon: '✉', tone: 'warning' });
+      render();
+    }
+
+    function openApp(appName) {
+      if (appName === 'bank') navigate('home');
+      else if (appName === 'sms') {
+        gameState.unreadApps.sms = 0;
+        navigate(gameState.currentScene === 9 ? 'carrier' : 'sms');
+      } else if (appName === 'mail') {
+        gameState.unreadApps.mail = 0;
+        navigate(gameState.currentScene === 11 ? 'breach' : 'mail');
+      } else if (appName === 'messenger') {
+        gameState.unreadApps.messenger = 0;
+        navigate(gameState.currentScene === 10 ? 'investment' : 'messenger');
+      } else if (appName === 'browser') {
+        if (gameState.currentScene === 6) navigate('delivery-page');
+        else if (gameState.currentScene === 7) navigate('market-page');
+        else if (gameState.currentScene === 8) navigate('mail-page');
+        else showToast('В браузере нет открытых страниц');
+      }
+    }
+
+    function deliveryDecision(action) {
+      gameState.unreadApps.sms = 0;
+      if (action === 'open') {
+        gameState.flags.deliveryLink = true;
+        gameState.exploredPages += 1;
+        changeRisk(18);
+        record('Открыли ссылку о доставке', 18, 'SMS перевело вас на неофициальный платёжный домен.', true);
+        gameState.screen = 'delivery-page';
+        render();
+        return;
+      }
+      if (action === 'verify') {
+        gameState.flags.deliveryReported = true;
+        changeRisk(-8);
+        discoverFlag('lookalike-domain');
+        discoverFlag('small-payment');
+        record('Проверили отправление самостоятельно', -8, 'Официальный сайт не нашёл такой посылки.', false);
+      } else if (action === 'report') {
+        gameState.flags.deliveryReported = true;
+        discoverFlag('small-payment');
+        record('Отметили SMS как спам', 0, 'Небольшая сумма не сделала ссылку безопасной.', false);
+      } else {
+        record('Закрыли SMS о доставке', 0, 'Вы не открыли ссылку, но не проверили источник.', false);
+      }
+      beginSituationSeven();
+    }
+
+    function deliveryPay() {
+      gameState.flags.deliveryPaid = true;
+      gameState.balance -= 199;
+      gameState.operations.unshift({ id: 'delivery-fee', title: 'Delivery Track', meta: 'Проверочный платёж', amount: -199, icon: 'D' });
+      changeRisk(30);
+      discoverFlag('small-payment');
+      record('Оплатили «повторную доставку»', 30, 'Проверочный платёж подтвердил активность карты мошенникам.', true);
+      beginSituationSeven();
+    }
+
+    function beginSituationSeven() {
+      gameState.currentScene = 7;
+      gameState.screen = 'phone-home';
+      gameState.unreadApps.messenger = 1;
+      addPush({ id: 'market', title: 'Кирилл · покупатель', text: 'Уже оплатил. Получите 7 500 ₽ по ссылке', icon: '◌', tone: 'warning' });
+      render();
+    }
+
+    function marketDecision(action) {
+      gameState.unreadApps.messenger = 0;
+      if (action === 'open') {
+        gameState.flags.marketplaceLink = true;
+        gameState.exploredPages += 1;
+        changeRisk(18);
+        record('Открыли ссылку покупателя', 18, 'Разговор ушёл из защищённого интерфейса маркетплейса.', true);
+        gameState.screen = 'market-page'; render(); return;
+      }
+      if (action === 'stay') {
+        gameState.flags.stayedInMarketplace = true;
+        changeRisk(-10);
+        discoverFlag('move-channel');
+        record('Остались внутри маркетплейса', -10, 'Встроенная доставка не подтвердила заказ покупателя.', false);
+      } else if (action === 'report') {
+        gameState.flags.stayedInMarketplace = true;
+        discoverFlag('move-channel');
+        discoverFlag('card-data');
+        record('Пожаловались на покупателя', 0, 'Запрос реквизитов и внешняя ссылка были признаками подмены.', false);
+      } else if (action === 'email') {
+        gameState.flags.sharedEmail = true;
+        changeRisk(12);
+        record('Передали email покупателю', 12, 'Мошенник получил ещё один канал для персональной атаки.', true);
+      }
+      beginSituationEight();
+    }
+
+    function marketConfirm() {
+      gameState.flags.dataShared = true;
+      changeRisk(32);
+      discoverFlag('card-data');
+      record('Подтвердили карту на странице покупателя', 32, 'Страница имитировала получение денег, но собирала реквизиты.', true);
+      beginSituationEight();
+    }
+
+    function beginSituationEight() {
+      gameState.currentScene = 8;
+      gameState.screen = 'phone-home';
+      gameState.unreadApps.mail = 1;
+      addPush({ id: 'mail', title: 'NOVA Документы', text: gameState.flags.sharedEmail ? 'Ваш чек по продаже готов' : 'Сформирована новая выписка', icon: '@', tone: 'warning' });
+      render();
+    }
+
+    function mailDecision(action) {
+      gameState.unreadApps.mail = 0;
+      if (action === 'open') {
+        gameState.flags.mailLink = true;
+        gameState.exploredPages += 1;
+        changeRisk(15);
+        record('Открыли ссылку из письма', 15, 'Логотип NOVA скрывал чужой домен отправителя.', true);
+        gameState.screen = 'mail-page'; render(); return;
+      }
+      if (action === 'sender') {
+        gameState.flags.senderChecked = true;
+        changeRisk(-10);
+        discoverFlag('sender-mismatch');
+        discoverFlag('lookalike-domain');
+        record('Проверили адрес отправителя', -10, 'Фактический домен не принадлежал NOVA.', false);
+      } else if (action === 'report') {
+        gameState.flags.senderChecked = true;
+        discoverFlag('sender-mismatch');
+        record('Отметили письмо как фишинг', 0, 'Письмо удалено вместе с опасной ссылкой.', false);
+      } else if (action === 'attachment') {
+        gameState.flags.attachmentOpened = true;
+        changeRisk(24);
+        record('Открыли архив из письма', 24, 'Неожиданное вложение создало новый риск для устройства.', true);
+      }
+      beginSituationNine();
+    }
+
+    function mailLogin() {
+      gameState.flags.passwordLeaked = true;
+      changeRisk(38);
+      discoverFlag('lookalike-domain');
+      record('Разрешили странице использовать пароль NOVA', 38, 'Сохранённый пароль оказался доступен странице-двойнику.', true);
+      beginSituationNine();
+    }
+
+    function beginSituationNine() {
+      gameState.currentScene = 9;
+      gameState.screen = 'phone-home';
+      gameState.unreadApps.sms = 1;
+      addPush({ id: 'sim', title: 'SIM Service', text: 'Запрошена замена SIM-карты', icon: 'S', tone: 'danger' });
+      render();
+    }
+
+    function simDecision(action) {
+      gameState.unreadApps.sms = 0;
+      if (action === 'call') {
+        gameState.flags.simCompromised = true;
+        changeRisk(36);
+        discoverFlag('secret-code');
+        record('Позвонили по номеру из SMS', 36, 'Код оператора был передан инициатору подмены SIM.', true);
+      } else if (action === 'official') {
+        gameState.flags.carrierChecked = true;
+        changeRisk(-18);
+        discoverFlag('move-channel');
+        record('Открыли приложение оператора', -18, 'Заявка на замену SIM была отменена в официальном канале.', false);
+      } else if (action === 'bank') {
+        gameState.flags.sessionsClosed = true;
+        changeRisk(-12);
+        record('Проверили восстановление в NOVA', -12, 'Номер был исключён из единственного способа восстановления.', false);
+      } else {
+        changeRisk(8);
+        record('Проигнорировали запрос на замену SIM', 8, 'Вы не передали код, но оставили заявку без проверки.', true);
+      }
+      beginSituationTen();
+    }
+
+    function beginSituationTen() {
+      gameState.currentScene = 10;
+      gameState.screen = 'phone-home';
+      gameState.unreadApps.messenger = 1;
+      addPush({ id: 'investment', title: 'Закрытый клуб «Вектор»', text: '18% за 48 часов. Осталось 3 места', icon: '↑', tone: 'warning' });
+      render();
+    }
+
+    function investmentDecision(action) {
+      gameState.unreadApps.messenger = 0;
+      if (action === 'pay') {
+        const amount = gameState.balance > 60000 ? 50000 : 10000;
+        gameState.flags.investmentPaid = true;
+        gameState.balance = Math.max(0, gameState.balance - amount);
+        gameState.operations.unshift({ id: 'investment', title: 'VECTOR CLUB', meta: 'Инвестиционный перевод', amount: -amount, icon: '↑' });
+        changeRisk(28);
+        discoverFlag('guaranteed-profit');
+        record('Перевели деньги в «закрытый клуб»', 28, 'Гарантированный доход и дефицит мест оказались приманкой.', true);
+      } else if (action === 'check') {
+        gameState.flags.investmentChecked = true;
+        changeRisk(-12);
+        discoverFlag('guaranteed-profit');
+        record('Проверили организацию в реестре', -12, 'Компания и заявленная лицензия не найдены.', false);
+      } else if (action === 'details') {
+        gameState.flags.investmentChecked = true;
+        discoverFlag('guaranteed-profit');
+        record('Запросили юридические реквизиты', 0, 'Собеседник прислал картинку вместо проверяемых данных.', false);
+      } else {
+        gameState.flags.investmentChecked = true;
+        discoverFlag('guaranteed-profit');
+        record('Заблокировали инвестиционную рекламу', 0, 'Обещание гарантированной доходности осталось без ответа.', false);
+      }
+      beginSituationEleven();
+    }
+
+    function beginSituationEleven() {
+      gameState.currentScene = 11;
+      gameState.screen = 'phone-home';
+      gameState.unreadApps.mail = 1;
+      addPush({ id: 'breach', title: 'Мониторинг паролей', text: 'Пароль требует проверки безопасности', icon: '!', tone: 'danger' });
+      render();
+    }
+
+    function breachDecision(action) {
+      gameState.unreadApps.mail = 0;
+      if (action === 'unique') {
+        gameState.flags.passwordChanged = true;
+        gameState.flags.sessionsClosed = true;
+        gameState.flags.breachHandled = true;
+        changeRisk(-28);
+        record('Создали уникальный пароль NOVA', -28, 'Утёкший пароль больше не открывает банк и активные сессии закрыты.', false);
+      } else if (action === 'reuse') {
+        gameState.flags.passwordReused = true;
+        changeRisk(30);
+        record('Повторно использовали пароль от почты', 30, 'Компрометация одного сервиса теперь угрожает второму.', true);
+      } else if (action === 'sessions') {
+        gameState.flags.sessionsClosed = true;
+        gameState.flags.breachHandled = true;
+        changeRisk(-16);
+        record('Завершили все сессии', -16, 'Текущий доступ закрыт, но старый пароль ещё нужно заменить.', false);
+      } else {
+        changeRisk(20);
+        record('Проигнорировали предупреждение об утечке', 20, 'Реальная угроза осталась без защитного действия.', true);
+      }
+      beginSituationTwelve();
+    }
+
+    function beginSituationTwelve() {
+      gameState.currentScene = 12;
+      gameState.screen = 'recovery';
+      gameState.pushes = [];
+      render();
+    }
+
+    function recoveryDecision(action) {
+      if (action === 'all') {
+        gameState.flags.comprehensiveRecovery = true;
+        gameState.flags.passwordChanged = true;
+        gameState.flags.sessionsClosed = true;
+        gameState.flags.cardBlocked = true;
+        gameState.flags.carrierChecked = true;
+        changeRisk(-38);
+        record('Запустили комплексное восстановление', -38, 'Банк, почта, сессии и SIM защищены независимо друг от друга.', false);
+      } else if (action === 'bank') {
+        gameState.flags.sessionsClosed = true;
+        gameState.flags.cardBlocked = true;
+        changeRisk(-22);
+        record('Защитили только банковский доступ', -22, 'Деньги защищены, но почта или SIM могут остаться слабыми местами.', false);
+      } else if (action === 'safe-account') {
+        gameState.flags.safeAccountTransfer = true;
+        const loss = Math.max(0, gameState.balance - 4320);
+        gameState.balance = 4320;
+        gameState.operations.unshift({ id: 'safe-account', title: 'Перевод на «резервный счёт»', meta: 'Получатель неизвестен', amount: -loss, icon: '!' });
+        changeRisk(50);
+        discoverFlag('safe-account');
+        record('Перевели деньги на «безопасный счёт»', 50, 'Банк никогда не защищает деньги переводом неизвестному получателю.', true);
+      } else {
+        changeRisk(8);
+        record('Выключили телефон', 8, 'Новые действия остановлены, но уже выданные доступы не отозваны.', true);
+      }
+      finishGame();
+    }
+
+    function calculateAchievements() {
+      if (gameState.flags.ignoredPressure) unlockAchievement('calm', 'Холодная голова', 'Таймер не заставил вас спешить.', '◷');
+      if (!gameState.flags.clickedLink && !gameState.flags.deliveryLink && !gameState.flags.marketplaceLink && !gameState.flags.mailLink) unlockAchievement('no-links', 'Без единого клика', 'Ни одна ссылка из сообщения не была открыта.', '⌁');
+      if (gameState.supportCount >= 2 || (gameState.flags.carrierChecked && gameState.flags.senderChecked)) unlockAchievement('official', 'Официальный маршрут', 'Вы самостоятельно открывали проверенные каналы.', '✓');
+      if (gameState.redFlags.length >= 6) unlockAchievement('flags', 'Охотник за флагами', 'Обнаружено не менее шести признаков мошенничества.', '⚑');
+      if (gameState.flags.comprehensiveRecovery) unlockAchievement('recovery', 'Контроль восстановлен', 'Все критические каналы защищены комплексно.', '◇');
+      if (gameState.exploredPages >= 3) unlockAchievement('curious', 'Опасное любопытство', 'Вы увидели три страницы-двойника и дошли до финала.', '◎');
+    }
+
+    function finishGame() {
+      calculateAchievements();
+      const f = gameState.flags;
+      const identityChain = (f.codeShared && (f.simCompromised || f.passwordLeaked)) || (f.passwordLeaked && f.simCompromised);
+      const noDangerousClicks = !f.clickedLink && !f.deliveryLink && !f.marketplaceLink && !f.mailLink;
+      const accountLost = (f.simCompromised && !f.carrierChecked) || (f.passwordReused && !f.sessionsClosed);
+      if (identityChain && !f.comprehensiveRecovery) {
+        gameState.ending = 'cascade';
+        if (gameState.balance > 4320) gameState.balance = 4320;
+      } else if (f.safeAccountTransfer || f.investmentPaid || (f.codeShared && f.dataShared && !f.cardBlocked)) {
+        gameState.ending = 'stolen';
+        if (!f.investmentPaid && gameState.balance > 4320) gameState.balance = 4320;
+      } else if (accountLost || gameState.risk >= 82) {
+        gameState.ending = 'locked';
+      } else if (f.comprehensiveRecovery && gameState.risk <= 8 && gameState.redFlags.length >= 7 && noDangerousClicks) {
+        gameState.ending = 'guardian';
+      } else if ((f.comprehensiveRecovery || (f.sessionsClosed && f.cardBlocked)) && gameState.risk <= 30) {
+        gameState.ending = 'safe';
+      } else {
+        gameState.ending = 'close';
+      }
+      gameState.screen = 'final';
+      gameState.pushes = [];
+      gameState.modal = null;
+      render();
+    }
+
+    // =============================
+    // EVENTS & UTILITIES
+    // =============================
+
+    app.addEventListener('click', event => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+
+      if (action === 'start') startGame();
+      else if (action === 'restart') startGame();
+      else if (action === 'navigate') navigate(button.dataset.screen);
+      else if (action === 'open-link') openSuspiciousLink();
+      else if (action === 'verify-transfer') verifyTransfer('operations');
+      else if (action === 'manual-return') manualReturn();
+      else if (action === 'support-transfer') supportTransfer();
+      else if (action === 'return-bank') returnToBank();
+      else if (action === 'send-code') sendCode();
+      else if (action === 'close-fake-chat') safeFromCode('close');
+      else if (action === 'security-code-check') safeFromCode('security');
+      else if (action === 'support-code') safeFromCode('support');
+      else if (action === 'pressure-save') resolvePressure('save');
+      else if (action === 'pressure-close') resolvePressure('close');
+      else if (action === 'pressure-check') resolvePressure('check');
+      else if (action === 'pressure-support') resolvePressure('support');
+      else if (action === 'pressure-block') resolvePressure('block');
+      else if (action === 'security-pressure-check') beginSituationFive();
+      else if (action === 'support-pressure') beginSituationFive();
+      else if (action === 'final-password') finalAction('password');
+      else if (action === 'final-sessions') finalAction('sessions');
+      else if (action === 'final-block') finalAction('block');
+      else if (action === 'final-ignore') finalAction('ignore');
+      else if (action === 'final-old-link') finalAction('old-link');
+      else if (action === 'final-security') { gameState.modal = null; navigate('security'); }
+      else if (action === 'open-app') openApp(button.dataset.app);
+      else if (action === 'delivery-open') deliveryDecision('open');
+      else if (action === 'delivery-verify') deliveryDecision('verify');
+      else if (action === 'delivery-report') deliveryDecision('report');
+      else if (action === 'delivery-ignore') deliveryDecision('ignore');
+      else if (action === 'delivery-pay') deliveryPay();
+      else if (action === 'delivery-return') { discoverFlag('lookalike-domain'); record('Закрыли страницу доставки', 0, 'Домен отличался от официального сайта службы доставки.', false); beginSituationSeven(); }
+      else if (action === 'market-open') marketDecision('open');
+      else if (action === 'market-stay') marketDecision('stay');
+      else if (action === 'market-report') marketDecision('report');
+      else if (action === 'market-email') marketDecision('email');
+      else if (action === 'market-confirm') marketConfirm();
+      else if (action === 'market-return') { discoverFlag('move-channel'); record('Вернулись в мессенджер', 0, 'Внешняя страница не была частью маркетплейса.', false); beginSituationEight(); }
+      else if (action === 'mail-open') mailDecision('open');
+      else if (action === 'mail-sender') mailDecision('sender');
+      else if (action === 'mail-report') mailDecision('report');
+      else if (action === 'mail-attachment') mailDecision('attachment');
+      else if (action === 'mail-login') mailLogin();
+      else if (action === 'mail-return') { discoverFlag('lookalike-domain'); discoverFlag('sender-mismatch'); record('Закрыли NOVA ID', 0, 'Адрес страницы не совпадал с официальным доменом банка.', false); beginSituationNine(); }
+      else if (action === 'sim-call') simDecision('call');
+      else if (action === 'sim-official') simDecision('official');
+      else if (action === 'sim-bank') simDecision('bank');
+      else if (action === 'sim-ignore') simDecision('ignore');
+      else if (action === 'invest-pay') investmentDecision('pay');
+      else if (action === 'invest-check') investmentDecision('check');
+      else if (action === 'invest-details') investmentDecision('details');
+      else if (action === 'invest-ignore') investmentDecision('ignore');
+      else if (action === 'breach-unique') breachDecision('unique');
+      else if (action === 'breach-reuse') breachDecision('reuse');
+      else if (action === 'breach-sessions') breachDecision('sessions');
+      else if (action === 'breach-ignore') breachDecision('ignore');
+      else if (action === 'recover-all') recoveryDecision('all');
+      else if (action === 'recover-bank') recoveryDecision('bank');
+      else if (action === 'recover-safe-account') recoveryDecision('safe-account');
+      else if (action === 'recover-off') recoveryDecision('off');
+      else if (action === 'modal-close') closeModal();
+      else if (action === 'open-push') openPush(button.dataset.push);
+      else if (action === 'noop') showToast('Раздел доступен — выберите действие по ситуации');
+    });
+
+    app.addEventListener('submit', event => {
+      if (event.target.id === 'fake-form') {
+        event.preventDefault();
+        submitFakeForm();
+      }
+    });
+
+    document.getElementById('landing-start')?.addEventListener('click', startGame);
+
+    function closeModal() {
+      const next = gameState.modal && gameState.modal.next;
+      gameState.modal = null;
+      if (next === 'scene3') beginSituationThree();
+      else if (next === 'scene4') beginSituationFour();
+      else if (next === 'login-actions') showLoginDecision();
+      else render();
+    }
+
+    function openPush(id) {
+      dismissPush(id);
+      if (id === 'sender') navigate('sender-chat');
+      else if (id === 'security') navigate('fake-chat');
+      else if (id === 'login') {
+        gameState.modal = { type: 'login' };
+        render();
+      } else if (id === 'delivery') navigate('sms');
+      else if (id === 'market') navigate('messenger');
+      else if (id === 'mail') navigate('mail');
+      else if (id === 'sim') navigate('carrier');
+      else if (id === 'investment') navigate('investment');
+      else if (id === 'breach') navigate('breach');
+      else navigate('transactions');
+    }
+
+    function showToast(text) {
+      gameState.toast = text;
+      render();
+      later(() => { gameState.toast = ''; render(); }, 2200);
+    }
+
+    function money(value) {
+      return `${new Intl.NumberFormat('ru-RU').format(value)} ₽`;
+    }
+
+    function formatCountdown(total) {
+      const minutes = Math.floor(total / 60).toString().padStart(2, '0');
+      const seconds = (total % 60).toString().padStart(2, '0');
+      return `${minutes}:${seconds}`;
+    }
+
+    render();
+  </script>
+</body>
+</html>
