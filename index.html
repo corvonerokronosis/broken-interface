@@ -305,6 +305,13 @@
     .final-balance { padding: 15px; margin-bottom: 12px; border-radius: 18px; color: white; background: var(--navy); }
     .final-balance span { display: block; color: #abb5cf; font-size: 10px; }
     .final-balance strong { display: block; margin-top: 4px; font-size: 25px; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+    .theft-impact { padding: 18px; margin-bottom: 12px; overflow: hidden; border: 1px solid #f1caca; border-radius: 18px; color: #6f2020; background: #fff1f1; animation: theft-impact-in .28s ease both; }
+    .theft-impact > span { display: block; margin-bottom: 10px; color: #a14d4d; font-size: 14px; font-weight: 850; }
+    .theft-transition { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+    .theft-transition .before { color: #9b7777; text-decoration: line-through; animation: theft-old .8s .25s ease both; }
+    .theft-transition i { color: var(--red); font-style: normal; animation: theft-arrow .25s .75s ease both; }
+    .theft-transition strong { color: var(--red); animation: theft-new .35s .9s ease both; }
+    .theft-operation { margin-top: 12px; padding-top: 12px; border-top: 1px solid #efcccc; font-size: 16px; font-weight: 850; animation: theft-operation-in .35s 1.15s ease both; }
     .risk-reveal { padding: 14px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 18px; background: white; }
     .risk-top { display: flex; justify-content: space-between; font-size: 11px; font-weight: 850; }
     .risk-bar { height: 8px; margin: 10px 0 7px; overflow: hidden; border-radius: 10px; background: #ecebe6; }
@@ -671,6 +678,11 @@
     @keyframes game-in { from { opacity: 0; transform: translateY(18px) scale(.98); } }
     @keyframes screen-enter { from { opacity: 0; transform: translateX(8px); } }
     @keyframes scroll-nudge { 0%, 55%, 100% { transform: translateY(-2px); } 72% { transform: translateY(3px); } }
+    @keyframes theft-impact-in { from { opacity: 0; transform: translateY(10px); } }
+    @keyframes theft-old { to { opacity: .45; transform: translateY(-2px); } }
+    @keyframes theft-arrow { from { opacity: 0; transform: translateX(-6px); } }
+    @keyframes theft-new { from { opacity: 0; transform: translateY(8px) scale(.92); } }
+    @keyframes theft-operation-in { from { opacity: 0; transform: translateY(6px); } }
 
     @media (max-width: 850px) {
       .ambient, .phone-glow { display: none; }
@@ -851,6 +863,8 @@
         pushes: [],
         toast: '',
         countdown: 180,
+        balanceBeforeTheft: null,
+        theftLoss: 0,
         ending: null
       };
     }
@@ -1423,7 +1437,9 @@
       const copy = endingCopy[key];
       const risk = gameState.risk;
       const debrief = getFinalDebriefItems().map(item => `<div class="debrief-item ${item.risky ? 'risky' : ''}"><b>${item.risky ? '!' : '✓'}</b><span><strong>${item.label}.</strong> ${item.explanation}</span></div>`).join('');
+      const theftImpact = gameState.theftLoss > 0 ? `<div class="theft-impact"><span>Списание со счёта</span><div class="theft-transition"><span class="before">${money(gameState.balanceBeforeTheft)}</span><i>→</i><strong>${money(gameState.balance)}</strong></div><div class="theft-operation">С вашего счёта списано ${money(gameState.theftLoss)}</div></div>` : '';
       return `<div class="final ${key}"><span class="final-kicker">Развязка · риск раскрыт</span><div class="final-mark">${copy.icon}</div><h2>${copy.title}</h2><p class="final-lead">${copy.lead}</p>
+        ${theftImpact}
         <div class="final-balance"><span>Итоговый баланс</span><strong>${money(gameState.balance)}</strong></div>
         <div class="final-stats"><div class="final-stat"><b>${gameState.score}</b><span>очков</span></div><div class="final-stat"><b>${gameState.redFlags.length}/10</b><span>флагов</span></div><div class="final-stat"><b>${gameState.achievements.length}</b><span>достижений</span></div></div>
         <div class="risk-reveal"><div class="risk-top"><span>Накопленный риск</span><span>${risk}/100</span></div><div class="risk-bar"><i style="width:${Math.max(risk, 2)}%"></i></div><small>Во время игры этот показатель был скрыт. Его меняли ваши действия.</small></div>
@@ -1881,6 +1897,8 @@
       if (action === 'pay') {
         const amount = gameState.balance > 60000 ? 50000 : 10000;
         gameState.flags.investmentPaid = true;
+        gameState.balanceBeforeTheft = gameState.balance;
+        gameState.theftLoss = amount;
         gameState.balance = Math.max(0, gameState.balance - amount);
         gameState.operations.unshift({ id: 'investment', title: 'VECTOR CLUB', meta: 'Инвестиционный перевод', amount: -amount, icon: '↑' });
         changeRisk(28);
@@ -1958,7 +1976,9 @@
         record('Защитили только банковский доступ', -22, 'Деньги защищены, но почта или SIM могут остаться слабыми местами.', false);
       } else if (action === 'safe-account') {
         gameState.flags.safeAccountTransfer = true;
+        gameState.balanceBeforeTheft = gameState.balance;
         const loss = Math.max(0, gameState.balance - 4320);
+        gameState.theftLoss = loss;
         gameState.balance = 4320;
         gameState.operations.unshift({ id: 'safe-account', title: 'Перевод на «резервный счёт»', meta: 'Получатель неизвестен', amount: -loss, icon: '!' });
         changeRisk(50);
@@ -1969,6 +1989,16 @@
         record('Выключили телефон', 8, 'Новые действия остановлены, но уже выданные доступы не отозваны.', true);
       }
       finishGame();
+    }
+
+    function applyForcedTheft() {
+      if (gameState.balance <= 4320) return;
+      const balanceBeforeTheft = gameState.balance;
+      const loss = balanceBeforeTheft - 4320;
+      gameState.balanceBeforeTheft = balanceBeforeTheft;
+      gameState.theftLoss = loss;
+      gameState.balance = 4320;
+      gameState.operations.unshift({ id: 'fraud-loss', title: 'Мошеннический перевод', meta: 'Новое устройство', amount: -loss, icon: '!' });
     }
 
     function calculateAchievements() {
@@ -1988,10 +2018,10 @@
       const accountLost = (f.simCompromised && !f.carrierChecked) || (f.passwordReused && !f.sessionsClosed);
       if (identityChain && !f.comprehensiveRecovery) {
         gameState.ending = 'cascade';
-        if (gameState.balance > 4320) gameState.balance = 4320;
+        applyForcedTheft();
       } else if (f.safeAccountTransfer || f.investmentPaid || (f.codeShared && f.dataShared && !f.cardBlocked)) {
         gameState.ending = 'stolen';
-        if (!f.investmentPaid && gameState.balance > 4320) gameState.balance = 4320;
+        if (!f.investmentPaid) applyForcedTheft();
       } else if (accountLost || gameState.risk >= 82) {
         gameState.ending = 'locked';
       } else if (f.comprehensiveRecovery && gameState.risk <= 8 && gameState.redFlags.length >= 7 && noDangerousClicks) {
