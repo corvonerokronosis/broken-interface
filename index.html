@@ -716,8 +716,10 @@
     }
 
     @media (max-width: 460px) {
-      .nav-btn { gap: 4px; font-size: 10px; }
-      .nav-btn .nav-icon { font-size: 21px; }
+      .bottom-nav { min-height: 90px; }
+      .nav-btn { gap: 5px; font-size: 14px; line-height: 1.05; letter-spacing: -.025em; }
+      .nav-btn .nav-icon { font-size: 23px; }
+      .nav-btn > span:not(.nav-icon):not(.badge) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
 
     @media (prefers-reduced-motion: reduce) {
