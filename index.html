@@ -1394,11 +1394,35 @@
       </div>`;
     }
 
+    function getFinalDebriefItems() {
+      const recent = gameState.history.slice(-8);
+      const f = gameState.flags;
+      const decisiveLabels = new Set();
+
+      if (gameState.ending === 'stolen') {
+        if (f.safeAccountTransfer) decisiveLabels.add('Перевели деньги на «безопасный счёт»');
+        if (f.investmentPaid) decisiveLabels.add('Перевели деньги в «закрытый клуб»');
+        if (f.codeShared && f.dataShared && !f.cardBlocked) {
+          decisiveLabels.add('Передали код подтверждения');
+          decisiveLabels.add('Ввели данные карты на внешней странице');
+          decisiveLabels.add('Подтвердили карту на странице покупателя');
+        }
+      } else if (gameState.ending === 'cascade') {
+        if (f.codeShared) decisiveLabels.add('Передали код подтверждения');
+        if (f.simCompromised) decisiveLabels.add('Позвонили по номеру из SMS');
+        if (f.passwordLeaked) decisiveLabels.add('Разрешили странице использовать пароль NOVA');
+      }
+
+      const decisive = gameState.history.filter(item => decisiveLabels.has(item.label));
+      const combined = [...decisive, ...recent];
+      return combined.filter((item, index) => combined.indexOf(item) === index);
+    }
+
     function renderFinal() {
       const key = gameState.ending;
       const copy = endingCopy[key];
       const risk = gameState.risk;
-      const debrief = gameState.history.slice(-8).map(item => `<div class="debrief-item ${item.risky ? 'risky' : ''}"><b>${item.risky ? '!' : '✓'}</b><span><strong>${item.label}.</strong> ${item.explanation}</span></div>`).join('');
+      const debrief = getFinalDebriefItems().map(item => `<div class="debrief-item ${item.risky ? 'risky' : ''}"><b>${item.risky ? '!' : '✓'}</b><span><strong>${item.label}.</strong> ${item.explanation}</span></div>`).join('');
       return `<div class="final ${key}"><span class="final-kicker">Развязка · риск раскрыт</span><div class="final-mark">${copy.icon}</div><h2>${copy.title}</h2><p class="final-lead">${copy.lead}</p>
         <div class="final-balance"><span>Итоговый баланс</span><strong>${money(gameState.balance)}</strong></div>
         <div class="final-stats"><div class="final-stat"><b>${gameState.score}</b><span>очков</span></div><div class="final-stat"><b>${gameState.redFlags.length}/10</b><span>флагов</span></div><div class="final-stat"><b>${gameState.achievements.length}</b><span>достижений</span></div></div>
