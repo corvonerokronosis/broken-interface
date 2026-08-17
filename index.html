@@ -1729,9 +1729,9 @@
         gameState.unreadApps.messenger = 0;
         navigate(gameState.currentScene === 10 ? 'investment' : 'messenger');
       } else if (appName === 'browser') {
-        if (gameState.currentScene === 6) navigate('delivery-page');
-        else if (gameState.currentScene === 7) navigate('market-page');
-        else if (gameState.currentScene === 8) navigate('mail-page');
+        if (gameState.currentScene === 6 && gameState.flags.deliveryLink) navigate('delivery-page');
+        else if (gameState.currentScene === 7 && gameState.flags.marketplaceLink) navigate('market-page');
+        else if (gameState.currentScene === 8 && gameState.flags.mailLink) navigate('mail-page');
         else showToast('В браузере нет открытых страниц');
       }
     }
