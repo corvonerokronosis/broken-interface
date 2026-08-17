@@ -1233,8 +1233,8 @@
     function renderExternal() {
       return `<div class="external"><div class="browser-bar"><div class="browser-controls"><i></i><i></i><i></i></div><div class="address bad">ⓘ&nbsp; nova-return.help / secure-refund</div></div>
         <div class="return-page"><div class="fake-logo"><i>✓</i> SafeReturn</div><h2>Безопасный возврат платежа</h2><p>Для подтверждения возврата укажите данные карты получателя.</p>
-          <form id="fake-form" autocomplete="off"><label class="form-field">Номер карты<input inputmode="numeric" name="card" maxlength="19" placeholder="0000 0000 0000 0000"></label>
-          <div class="form-row"><label class="form-field">Срок действия<input name="expiry" maxlength="5" placeholder="00/00"></label><label class="form-field">CVV<input inputmode="numeric" name="cvv" maxlength="3" placeholder="000"></label></div>
+          <form id="fake-form" autocomplete="off"><label class="form-field">Номер карты<input inputmode="numeric" name="card" minlength="16" maxlength="19" pattern="[0-9 ]{16,19}" placeholder="0000 0000 0000 0000" required></label>
+          <div class="form-row"><label class="form-field">Срок действия<input inputmode="numeric" name="expiry" maxlength="5" pattern="(0[1-9]|1[0-2])/[0-9]{2}" placeholder="00/00" required></label><label class="form-field">CVV<input inputmode="numeric" name="cvv" maxlength="3" pattern="[0-9]{3}" placeholder="000" required></label></div>
           <button class="fake-submit" type="submit">Подтвердить возврат</button></form>
           <button class="external-return" data-action="return-bank">Вернуться в приложение NOVA</button><div class="fake-foot">© SafeReturn Payment Service · Защищённое соединение</div>
         </div></div>`;
@@ -1549,6 +1549,12 @@
     }
 
     function submitFakeForm() {
+      const form = document.getElementById('fake-form');
+      if (!form || !form.checkValidity()) {
+        form?.reportValidity();
+        showToast('Заполните все реквизиты в ожидаемом формате');
+        return;
+      }
       gameState.flags.dataShared = true;
       changeRisk(38);
       discoverFlag('card-data');
