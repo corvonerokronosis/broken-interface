@@ -41,9 +41,9 @@
       overflow-x: hidden;
     }
 
-    button, input { font: inherit; }
+    button, input, [contenteditable] { font: inherit; }
     button { color: inherit; }
-    button:focus-visible, input:focus-visible { outline: 3px solid rgba(49, 94, 234, .28); outline-offset: 2px; }
+    button:focus-visible, input:focus-visible, [contenteditable]:focus-visible { outline: 3px solid rgba(49, 94, 234, .28); outline-offset: 2px; }
 
     .ambient {
       position: fixed;
@@ -246,7 +246,11 @@
     .return-page h2 { margin: 0 0 9px; font-size: 24px; letter-spacing: -.035em; }
     .return-page > p { margin: 0 0 23px; color: #666; font-size: 12px; line-height: 1.5; }
     .form-field { display: block; margin: 0 0 12px; color: #555; font-size: 10px; font-weight: 750; }
-    .form-field input { width: 100%; height: 44px; margin-top: 6px; padding: 0 12px; border: 1px solid #cacaca; border-radius: 8px; background: white; font-size: 13px; }
+    .form-field > span { cursor: pointer; }
+    .form-field input, .simulated-input { width: 100%; height: 44px; margin-top: 6px; padding: 0 12px; border: 1px solid #cacaca; border-radius: 8px; background: white; font-size: 13px; }
+    .simulated-input { display: flex; align-items: center; cursor: text; color: #23252b; font-weight: 400; white-space: nowrap; overflow: hidden; }
+    .simulated-input:empty::before { content: attr(data-placeholder); color: #777; pointer-events: none; }
+    .simulated-input.invalid { border-color: #d94242; box-shadow: 0 0 0 2px rgba(217,66,66,.12); }
     .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .fake-submit { width: 100%; min-height: 47px; margin-top: 4px; border: 0; border-radius: 9px; color: white; background: #19966c; cursor: pointer; font-weight: 850; }
     .external-return { width: 100%; border: 0; margin-top: 14px; padding: 7px; color: #666; background: none; text-decoration: underline; cursor: pointer; font-size: 11px; }
@@ -367,7 +371,7 @@
     .address { height: 31px; font-size: 11px; }
     .return-page > p { font-size: 14px; }
     .form-field { font-size: 12px; }
-    .form-field input { height: 48px; font-size: 15px; }
+    .form-field input, .simulated-input { height: 48px; font-size: 15px; }
     .fake-submit { min-height: 49px; font-size: 14px; }
     .external-return { font-size: 13px; }
     .fake-foot { font-size: 11px; }
@@ -547,7 +551,7 @@
     .return-page h2 { font-size: 29px; }
     .return-page > p { font-size: 18px; line-height: 1.6; }
     .form-field { font-size: 16px; }
-    .form-field input { height: 56px; font-size: 18px; }
+    .form-field input, .simulated-input { height: 56px; font-size: 18px; }
     .fake-submit { min-height: 57px; font-size: 18px; }
     .external-return { min-height: 48px; font-size: 16px; }
     .fake-foot { font-size: 14px; }
@@ -1235,8 +1239,8 @@
     function renderExternal() {
       return `<div class="external"><div class="browser-bar"><div class="browser-controls"><i></i><i></i><i></i></div><div class="address bad">ⓘ&nbsp; nova-return.help / secure-refund</div></div>
         <div class="return-page"><div class="fake-logo"><i>✓</i> SafeReturn</div><h2>Безопасный возврат платежа</h2><p>Для подтверждения возврата укажите данные карты получателя.</p>
-          <form id="fake-form" autocomplete="off"><label class="form-field">Номер карты<input inputmode="numeric" name="card" minlength="16" maxlength="19" pattern="[0-9 ]{16,19}" placeholder="0000 0000 0000 0000" required></label>
-          <div class="form-row"><label class="form-field">Срок действия<input inputmode="numeric" name="expiry" maxlength="5" pattern="(0[1-9]|1[0-2])/[0-9]{2}" placeholder="00/00" required></label><label class="form-field">CVV<input inputmode="numeric" name="cvv" maxlength="3" pattern="[0-9]{3}" placeholder="000" required></label></div>
+          <form id="fake-form" autocomplete="off"><div class="form-field"><span id="card-field-label">Номер карты</span><div class="simulated-input" role="textbox" aria-labelledby="card-field-label" aria-required="true" aria-autocomplete="none" inputmode="numeric" contenteditable="plaintext-only" spellcheck="false" data-game-field="card" data-placeholder="0000 0000 0000 0000"></div></div>
+          <div class="form-row"><div class="form-field"><span id="expiry-field-label">Срок действия</span><div class="simulated-input" role="textbox" aria-labelledby="expiry-field-label" aria-required="true" aria-autocomplete="none" inputmode="numeric" contenteditable="plaintext-only" spellcheck="false" data-game-field="expiry" data-placeholder="00/00"></div></div><div class="form-field"><span id="cvv-field-label">CVV</span><div class="simulated-input" role="textbox" aria-labelledby="cvv-field-label" aria-required="true" aria-autocomplete="none" inputmode="numeric" contenteditable="plaintext-only" spellcheck="false" data-game-field="cvv" data-placeholder="000"></div></div></div>
           <button class="fake-submit" type="submit">Подтвердить возврат</button></form>
           <button class="external-return" data-action="return-bank">Вернуться в приложение NOVA</button><div class="fake-foot">© SafeReturn Payment Service · Защищённое соединение</div>
         </div></div>`;
@@ -1552,11 +1556,25 @@
 
     function submitFakeForm() {
       const form = document.getElementById('fake-form');
-      if (!form || !form.checkValidity()) {
-        form?.reportValidity();
-        showToast('Заполните все реквизиты в ожидаемом формате');
+      if (!form) return;
+      const fields = Object.fromEntries([...form.querySelectorAll('[data-game-field]')].map(field => [field.dataset.gameField, field]));
+      const invalidField = [
+        [fields.card, /^\d{4}( \d{4}){3}$/],
+        [fields.expiry, /^(0[1-9]|1[0-2])\/\d{2}$/],
+        [fields.cvv, /^\d{3}$/]
+      ].find(([field, pattern]) => !field || !pattern.test(field.textContent.trim()));
+      form.querySelectorAll('[data-game-field]').forEach(field => {
+        field.classList.remove('invalid');
+        field.removeAttribute('aria-invalid');
+      });
+      if (invalidField) {
+        invalidField[0]?.classList.add('invalid');
+        invalidField[0]?.setAttribute('aria-invalid', 'true');
+        invalidField[0]?.focus();
+        showToast('Заполните все реквизиты в ожидаемом формате', true);
         return;
       }
+      gameState.toast = '';
       gameState.flags.dataShared = true;
       changeRisk(38);
       discoverFlag('card-data');
@@ -2050,6 +2068,9 @@
     // =============================
 
     app.addEventListener('click', event => {
+      const fieldContainer = event.target.closest('.form-field');
+      const simulatedField = fieldContainer?.querySelector('[data-game-field]');
+      if (simulatedField && !simulatedField.contains(event.target)) simulatedField.focus();
       const button = event.target.closest('[data-action]');
       if (!button) return;
       const action = button.dataset.action;
@@ -2126,6 +2147,34 @@
       }
     });
 
+    app.addEventListener('input', event => {
+      const field = event.target.closest?.('[data-game-field]');
+      if (!field) return;
+      const digits = field.textContent.replace(/\D/g, '');
+      let value = '';
+      if (field.dataset.gameField === 'card') value = (digits.slice(0, 16).match(/.{1,4}/g) || []).join(' ');
+      else if (field.dataset.gameField === 'expiry') {
+        const expiry = digits.slice(0, 4);
+        value = expiry.length > 2 ? `${expiry.slice(0, 2)}/${expiry.slice(2)}` : expiry;
+      } else value = digits.slice(0, 3);
+      field.textContent = value;
+      field.classList.remove('invalid');
+      field.removeAttribute('aria-invalid');
+      const range = document.createRange();
+      range.selectNodeContents(field);
+      range.collapse(false);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    });
+
+    app.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && event.target.closest?.('[data-game-field]')) {
+        event.preventDefault();
+        submitFakeForm();
+      }
+    });
+
     document.getElementById('landing-start')?.addEventListener('click', startGame);
     window.addEventListener('resize', updateScrollCue);
 
@@ -2154,10 +2203,20 @@
       else navigate('transactions');
     }
 
-    function showToast(text) {
+    function updateToastSlot() {
+      const slot = app.querySelector('.toast-slot');
+      if (slot) slot.innerHTML = gameState.toast ? `<div class="toast" role="status">${gameState.toast}</div>` : '';
+    }
+
+    function showToast(text, preserveScreen = false) {
       gameState.toast = text;
-      render();
-      later(() => { gameState.toast = ''; render(); }, 2200);
+      if (preserveScreen) updateToastSlot();
+      else render();
+      later(() => {
+        gameState.toast = '';
+        if (preserveScreen) updateToastSlot();
+        else render();
+      }, 2200);
     }
 
     function money(value) {
